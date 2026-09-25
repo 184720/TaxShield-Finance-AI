@@ -1,0 +1,507 @@
+/* 税智盾 TaxShield AI — PDF 报告导出（浏览器打印优化方案）
+ * 屏幕下隐藏打印文档；打印时隐藏 App 壳，只输出报告文档。
+ * 全部使用普通 hex 色，避免依赖 Tailwind 的 oklch/color-mix。
+ */
+
+@media screen {
+  /* 离屏渲染：不能用 display:none，否则 html2canvas 无法截取该节点 */
+  #taxshield-print-root {
+    position: absolute;
+    left: -20000px;
+    top: 0;
+    width: 794px; /* A4 宽度 @96dpi */
+    background: #ffffff;
+    pointer-events: none;
+  }
+}
+
+@media print {
+  #root {
+    display: none !important;
+  }
+  #taxshield-print-root {
+    position: static !important;
+    left: auto !important;
+    width: auto !important;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 14mm 13mm 16mm;
+}
+
+.ts-report {
+  --brand: #1a365d;
+  --brand-2: #2563eb;
+  --brand-600: #16294a;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --line: #dbe3ee;
+  --soft: #f4f7fb;
+  /* 语义状态色：与屏幕端设计令牌同口径（绿=正常 / 橙=整改 / 红=风险） */
+  --ok: #15803d;
+  --ok-soft: #e9f6ee;
+  --ok-line: #b9e0c6;
+  --warn: #b45309;
+  --warn-soft: #fdf3e3;
+  --warn-line: #f0d7a5;
+  --risk: #b91c1c;
+  --risk-soft: #fdecec;
+  --risk-line: #f2c4c4;
+  --ai: #2563eb;
+  --ai-2: #7c3aed;
+  --ai-soft: #eff4ff;
+  color: var(--ink);
+  font-family: "Noto Sans SC", "Microsoft YaHei", "PingFang SC", "Source Han Sans SC", sans-serif;
+  font-size: 12px;
+  line-height: 1.65;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.ts-report * {
+  box-sizing: border-box;
+}
+
+.ts-report p {
+  margin: 4px 0;
+}
+
+/* 分页：每个 .ts-page 占一页，最后一页不强制分页 */
+.ts-page {
+  page-break-after: always;
+  break-after: page;
+}
+.ts-page:last-child {
+  page-break-after: auto;
+  break-after: auto;
+}
+
+/* 章节标题 */
+.ts-h2 {
+  margin: 0 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--brand);
+  color: var(--brand);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.ts-h3 {
+  margin: 18px 0 6px;
+  color: var(--brand-2);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ============ 封面 ============ */
+.ts-cover {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 245mm;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #1a365d 0%, #122a4a 100%);
+  color: #ffffff;
+  padding: 40px 44px;
+  text-align: center;
+}
+.ts-cover .ts-brand {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+.ts-cover .ts-brand-cn {
+  margin-top: 4px;
+  font-size: 14px;
+  letter-spacing: 8px;
+  color: #a8bad6;
+}
+.ts-cover .ts-cover-title {
+  margin-top: 18px;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.ts-cover .ts-cover-sub {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #cbd8ea;
+}
+.ts-cover .ts-cover-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 28px;
+  margin: 44px auto 0;
+  width: 100%;
+  max-width: 130mm;
+  text-align: left;
+}
+.ts-cover .ts-cover-meta > div {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.28);
+  padding-bottom: 10px;
+}
+.ts-cover .ts-cover-meta span {
+  display: block;
+  font-size: 11px;
+  color: #a8bad6;
+}
+.ts-cover .ts-cover-meta strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.ts-cover .ts-cover-ai {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 34px auto 0;
+  width: 100%;
+  max-width: 130mm;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding-top: 16px;
+}
+.ts-cover .ts-cover-ai .ts-ai-tag {
+  border-color: rgba(255, 255, 255, 0.34);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+.ts-cover .ts-cover-ai .ts-ai-dot {
+  background: linear-gradient(90deg, #7fb0ff 0%, #c9a6ff 100%);
+}
+.ts-cover .ts-cover-ai-text {
+  font-size: 10px;
+  line-height: 1.7;
+  color: #b8c9e4;
+}
+.ts-cover .ts-cover-foot {
+  margin-top: 26px;
+  font-size: 10px;
+  color: #8ea3c4;
+}
+
+/* ============ 键值表（企业画像） ============ */
+.ts-kv {
+  width: 100%;
+  border-collapse: collapse;
+}
+.ts-kv th,
+.ts-kv td {
+  border: 1px solid var(--line);
+  padding: 9px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+.ts-kv th {
+  width: 18%;
+  background: var(--soft);
+  color: var(--brand);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ts-kv td {
+  width: 32%;
+}
+
+/* ============ 健康评分 ============ */
+.ts-score {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+  padding: 26px 28px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--soft);
+}
+.ts-score-big {
+  font-size: 64px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--brand);
+}
+.ts-score-big span {
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.ts-score-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  flex: 1;
+}
+.ts-score-grid > div {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+}
+.ts-score-grid span {
+  color: var(--muted);
+}
+.ts-score-grid strong {
+  font-size: 15px;
+}
+
+/* ============ 表格 ============ */
+.ts-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+}
+.ts-table th,
+.ts-table td {
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+.ts-table thead th {
+  background: var(--brand);
+  color: #ffffff;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ts-table tbody tr:nth-child(even) {
+  background: var(--soft);
+}
+.ts-table .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ============ 风险等级标签 ============ */
+.ts-level {
+  display: inline-block;
+  border-radius: 3px;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ts-level-low {
+  background: var(--ok-soft);
+  color: var(--ok);
+  border: 1px solid var(--ok-line);
+}
+.ts-level-medium {
+  background: var(--warn-soft);
+  color: var(--warn);
+  border: 1px solid var(--warn-line);
+}
+.ts-level-high {
+  background: var(--risk-soft);
+  color: var(--risk);
+  border: 1px solid var(--risk-line);
+}
+
+/* ============ AI 辅助分析标识（与屏幕端 AIAttribution 同口径） ============ */
+.ts-ai-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #c7d7fe;
+  border-radius: 999px;
+  background: var(--ai-soft);
+  padding: 2px 9px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ai);
+}
+.ts-ai-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, var(--ai) 0%, var(--ai-2) 100%);
+}
+.ts-ai-note {
+  margin: 10px 0 0;
+  border: 1px solid #dbe4fb;
+  border-left: 3px solid var(--ai);
+  border-radius: 4px;
+  background: var(--ai-soft);
+  padding: 8px 11px;
+  font-size: 10px;
+  line-height: 1.6;
+  color: #334155;
+}
+.ts-ai-note strong {
+  color: var(--ai);
+}
+.ts-ai-panel {
+  margin-top: 14px;
+  border: 1px solid #dbe4fb;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #f8faff 0%, #ffffff 100%);
+  padding: 14px 16px;
+}
+.ts-ai-panel .ts-h3:first-child {
+  margin-top: 0;
+}
+.ts-step-list {
+  margin: 4px 0 0;
+  padding-left: 22px;
+}
+.ts-step-list li {
+  margin: 4px 0;
+}
+.ts-capability-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 18px 0;
+}
+.ts-capability-grid > div {
+  min-height: 88px;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--brand-2);
+  border-radius: 5px;
+  background: var(--soft);
+  padding: 12px 14px;
+}
+.ts-capability-grid strong,
+.ts-capability-grid span {
+  display: block;
+}
+.ts-capability-grid strong {
+  margin-bottom: 6px;
+  color: var(--brand);
+  font-size: 13px;
+}
+.ts-capability-grid span {
+  color: #475569;
+  font-size: 11px;
+}
+.ts-empty-note {
+  margin: 14px 0;
+  border: 1px dashed #b8c5d8;
+  border-radius: 5px;
+  background: var(--soft);
+  padding: 14px;
+  color: var(--muted);
+}
+
+/* ============ 风险详情 ============ */
+.ts-risk-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.ts-risk-head .ts-cat {
+  color: var(--muted);
+  font-size: 11px;
+}
+.ts-risk-head .ts-impact {
+  margin-left: auto;
+  font-weight: 600;
+  color: var(--brand);
+}
+
+.ts-policy {
+  border-left: 3px solid var(--brand-2);
+  background: var(--soft);
+  margin: 8px 0;
+  padding: 8px 12px;
+}
+.ts-policy p {
+  margin: 2px 0;
+}
+.ts-policy .ts-policy-doc {
+  font-weight: 600;
+}
+
+.ts-disclaimer {
+  font-size: 10px;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  margin-top: 10px;
+  padding-top: 6px;
+}
+
+/* ============ Checklist ============ */
+.ts-check-risk {
+  margin: 10px 0;
+}
+.ts-check-title {
+  font-weight: 600;
+  color: var(--brand);
+  margin: 6px 0 4px;
+}
+.ts-check-risk ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ts-check-risk li {
+  padding: 5px 8px;
+  border-bottom: 1px dashed var(--line);
+}
+.ts-check-risk li.done {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.ts-plan-meta {
+  font-size: 9.5px;
+  color: var(--muted);
+}
+.ts-summary {
+  margin-top: 14px;
+  font-weight: 600;
+  color: var(--brand);
+}
+
+/* ============ 复检对比 ============ */
+.ts-recheck {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--soft);
+  margin-bottom: 14px;
+}
+.ts-recheck-num {
+  font-size: 15px;
+  color: var(--muted);
+  text-align: center;
+}
+.ts-recheck-num strong {
+  display: block;
+  font-size: 34px;
+  color: var(--ink);
+}
+.ts-recheck-num.up strong {
+  color: #15803d;
+}
+.ts-recheck-arrow {
+  font-size: 26px;
+  color: var(--muted);
+}
+.ts-recheck-delta {
+  font-size: 15px;
+  font-weight: 700;
+  color: #15803d;
+}
+.ts-recheck-delta strong {
+  font-size: 26px;
+}
+.ts-diff-table {
+  margin: 12px 0;
+}
+
+/* ============ 页脚 ============ */
+.ts-page-foot {
+  margin-top: 18px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 9.5px;
+  color: var(--muted);
+  text-align: center;
+}

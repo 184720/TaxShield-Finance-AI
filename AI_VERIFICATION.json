@@ -1,0 +1,31 @@
+{
+  "protectedFilesUnchanged": [
+    "src/pages/ReportPage/report-print.css",
+    "src/pages/ReportPage/components/TaxHealthReportDocument.tsx",
+    "src/modules/risk-engine/index.ts",
+    "src/modules/risk-engine/industryBenchmark.ts",
+    "src/modules/risk-engine/riskEvidence.ts",
+    "src/modules/risk-engine/riskRules.ts",
+    "src/modules/risk-engine/riskScore.ts",
+    "src/modules/risk-engine/riskSuggestion.ts",
+    "src/modules/report/recheck.ts",
+    "src/modules/report/report-diff.ts",
+    "src/modules/policy/index.ts",
+    "src/modules/policy/policy-service.ts",
+    "src/modules/policy/policy-store.ts",
+    "src/modules/policy/types.ts",
+    "src/hooks/use-pdf-export.ts"
+  ],
+  "testScope": "Qwen response fixtures, local HTTP, browser fallback UI; no live paid model call",
+  "secretSentinelAbsent": true,
+  "publicFunctionProbe": {
+    "url": "https://taxshield-ai.netlify.app/.netlify/functions/qwen-explain",
+    "status": 200,
+    "contentType": "text/html",
+    "result": "function not deployed; SPA fallback returned"
+  },
+  "blocked": [
+    "QWEN_API_KEY unavailable",
+    "Netlify auth/site binding unavailable"
+  ]
+}

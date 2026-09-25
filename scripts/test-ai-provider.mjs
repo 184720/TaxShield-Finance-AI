@@ -1,0 +1,48 @@
+import assert from 'node:assert/strict';
+import { createServer } from 'vite';
+import { fileURLToPath } from 'node:url';
+const server = await createServer({configFile:false,cacheDir:'.netlify/test-ai-vite-cache',server:{middlewareMode:true},resolve:{alias:{'@':fileURLToPath(new URL('../src',import.meta.url))}}});
+const originalFetch=globalThis.fetch;
+try {
+ const schema=await server.ssrLoadModule('/src/modules/ai/schema.ts');
+ assert.equal(typeof schema.validateQwenExplanation,'function','Qwen output must be validated and adapted');
+ const risk={id:'vat',category:'增值税',riskName:'增值税负担与抵扣异常',level:'medium',probability:.5,severity:2,impactAmount:120,reason:'进项抵扣需核对',evidence:[{label:'进项税额',value:'100元'}],status:'detected',policyReferences:[{id:'VAT001',title:'演示政策',documentNumber:'演示〔2024〕1号',issuer:'演示',effectiveDate:'2024-01-01',status:'review-required',articleNumber:'第一条',content:'需核对',riskTypes:['vat'],industries:[]}],suggestion:{summary:'核对',steps:['核对原始凭证'],requiredMaterials:['凭证'],precautions:['复核']}};
+ const raw={riskId:'vat',reportId:'report-test',risk_summary:'解释引擎已有提示',reason_analysis:'进项证据需要核对',evidence_explanation:'进项税额为100元',possible_impact:'可能需要进一步核对抵扣资料',suggestion:'建议核对原始凭证',confidence:'medium',data_gaps:[],evidence_indices:[0],policy_ids:['VAT001']};
+ const adapted=schema.validateQwenExplanation(raw,'report-test',risk);
+ assert.deepEqual(adapted.evidence,risk.evidence); assert.equal(adapted.riskId,'vat');assert.equal(adapted.reportId,'report-test');assert.ok(adapted.disclaimer.includes('Qwen'));
+ const formattedRisk={...risk,evidence:[{label:'进项税额',value:'100,000.00元'}]};
+ const formattedRaw={...raw,evidence_explanation:'进项税额为100000元'};
+ assert.doesNotThrow(()=>schema.validateQwenExplanation(formattedRaw,'report-test',formattedRisk),'equivalent numeric formatting should be accepted');
+ const invalid=[{riskId:'cit'},{reportId:'other'},{evidence_indices:[9]},{policy_ids:['FAKE001']},{evidence_explanation:'进项税额为999元'},{reason_analysis:'依据不存在〔2025〕99号'},{risk_summary:'企业已经违法'},{healthIndex:100},{confidence:'perfect'},{data_gaps:['缺少资料',123]},{risk_summary:'风险已解除'}];
+ for(const change of invalid) assert.throws(()=>schema.validateQwenExplanation({...raw,...change},'report-test',risk),JSON.stringify(change));
+ const {createLLMProvider}=await server.ssrLoadModule('/src/modules/ai/llm-provider.ts');
+ const request={reportId:'report-test',riskRecord:risk,prompt:'ignored'};
+ const snapshot=JSON.stringify(risk);
+ let calls=0;
+ globalThis.fetch=async(url,options)=>{calls++;assert.equal(url,'/.netlify/functions/qwen-explain');const body=JSON.parse(options.body);assert.equal(body.riskRecord.id,'vat');assert.equal(body.prompt,undefined);return Response.json({data:raw,meta:{provider:'qwen',model:'qwen-plus',generatedAt:'2026-09-19T01:00:00.000Z'}});};
+ const live=await createLLMProvider('qwen').explainRisk(request);
+ assert.equal(live.summary,raw.risk_summary);assert.equal(calls,1);
+ await createLLMProvider('mock').explainRisk(request);assert.equal(calls,1,'Mock must not access network');
+ for(const response of [()=>Response.json({...raw,reportId:'wrong'}),()=>new Response('not json'),()=>new Response('denied',{status:401}),()=>{throw new Error('offline');}]){
+  globalThis.fetch=async()=>response();const fallback=await createLLMProvider('qwen').explainRisk(request);assert.match(fallback.disclaimer,/Mock/);assert.deepEqual(fallback.evidence,risk.evidence);
+ }
+ assert.equal(JSON.stringify(risk),snapshot,'AI must never mutate engine output');
+ const {handleQwenRequest}=await server.ssrLoadModule('/src/modules/ai/server/qwen-handler.ts');
+ const req=()=>new Request('https://demo.test/.netlify/functions/qwen-explain',{method:'POST',headers:{origin:'https://demo.test','content-type':'application/json'},body:JSON.stringify({task:'explanation',reportId:'report-test',riskRecord:risk})});
+ assert.equal((await handleQwenRequest(req(),{})).status,503);
+ assert.equal((await handleQwenRequest(new Request('https://demo.test/api'),{})).status,405);
+ assert.equal((await handleQwenRequest(new Request('https://demo.test/api',{method:'POST',headers:{origin:'https://evil.test'}}),{QWEN_API_KEY:'test'})).status,403);
+ let upstreamCalls=0;globalThis.fetch=async(url,options)=>{upstreamCalls++;assert.equal(options.headers.Authorization,'Bearer test-key');const body=JSON.parse(options.body);assert.equal(body.response_format.type,'json_object');assert.equal(body.enable_thinking,false);assert.ok(body.messages[1].content.includes('report-test'));assert.ok(!body.messages[1].content.includes('healthIndex'));return Response.json({model:'qwen-plus',choices:[{message:{content:JSON.stringify(raw)},finish_reason:'stop'}]});};
+ const result=await handleQwenRequest(req(),{QWEN_API_KEY:'test-key'});assert.equal(result.status,200);const responseBody=await result.json();assert.equal(responseBody.data.riskId,'vat');assert.equal(responseBody.meta.provider,'qwen');
+ const partialEvidenceRisk={...risk,id:'partial-evidence',evidence:[{label:'金额',value:100000},{label:'待补证据'}]};
+ const partialRaw={...raw,riskId:'partial-evidence',reportId:'report-partial',evidence_explanation:'金额为100,000.00元，差额20,000元，另有证据待补充',evidence_indices:[0,1],policy_ids:[]};
+ globalThis.fetch=async()=>Response.json({model:'qwen-plus',choices:[{message:{content:JSON.stringify(partialRaw)},finish_reason:'stop'}]});
+ const partialReq=new Request('https://demo.test/.netlify/functions/qwen-explain',{method:'POST',headers:{origin:'https://demo.test','content-type':'application/json'},body:JSON.stringify({task:'explanation',reportId:'report-partial',riskRecord:partialEvidenceRisk})});
+ const partialResult=await handleQwenRequest(partialReq,{QWEN_API_KEY:'test-key'});assert.equal(partialResult.status,200,'numeric and partial evidence should be normalized at the server boundary');
+ const partialBody=await partialResult.json();assert.ok(partialBody.data.evidence_explanation.includes('未核实数值'));assert.ok(!partialBody.data.evidence_explanation.includes('20,000'));
+ const deduplicated=await handleQwenRequest(req(),{QWEN_API_KEY:'test-key'});assert.equal(deduplicated.status,200);assert.equal(deduplicated.headers.get('X-TaxShield-Deduplicated'),'true');assert.equal(upstreamCalls,1,'same risk should not hit upstream twice during cooldown');
+ globalThis.fetch=async()=>Response.json({choices:[{message:{content:'{invalid'},finish_reason:'stop'}]});
+ const malformedReq=new Request('https://demo.test/.netlify/functions/qwen-explain',{method:'POST',headers:{origin:'https://demo.test','content-type':'application/json'},body:JSON.stringify({task:'explanation',reportId:'report-malformed',riskRecord:risk})});
+ assert.equal((await handleQwenRequest(malformedReq,{QWEN_API_KEY:'test-key'})).status,502);
+ console.log('PASS: valid Qwen adaptation; 11 invalid outputs; provider selection; 4 fallback paths; input isolation; server guards, API request, malformed upstream');
+} finally {globalThis.fetch=originalFetch;await server.close();}
