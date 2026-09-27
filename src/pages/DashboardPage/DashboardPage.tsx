@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
+  Activity,
   ArrowRight,
   BrainCircuit,
   Building2,
@@ -19,6 +20,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import AIAssistantWidget from '@/components/AIAssistantWidget';
 import FinancingReadinessCard from '@/components/FinancingReadinessCard';
+import TaxHealthProfileCard from '@/components/TaxHealthProfileCard';
+import IndustryBenchmarkCard from '@/components/IndustryBenchmarkCard';
+import BusinessAdvisorCard from '@/components/BusinessAdvisorCard';
 import {
   ComplianceNote,
   EmptyReport,
@@ -38,12 +42,12 @@ import { runRiskEngine } from '@/modules/risk-engine';
 import type { RiskRecord } from '@/modules/domain/types';
 
 const FLOW = [
-  { icon: FileUp, label: '财务数据' },
-  { icon: ShieldCheck, label: '风险检测' },
-  { icon: BrainCircuit, label: 'AI解释' },
-  { icon: Scale, label: '政策依据' },
-  { icon: ClipboardCheck, label: '整改方案' },
-  { icon: TrendingUp, label: '复检提升' },
+  { icon: FileUp, label: '数据' },
+  { icon: ShieldCheck, label: '检测' },
+  { icon: BrainCircuit, label: '解释' },
+  { icon: ClipboardCheck, label: '整改' },
+  { icon: TrendingUp, label: '复检' },
+  { icon: Building2, label: '融资准备' },
 ] as const;
 
 /** 按风险等级排序，用于挑选最需要优先处置的事项（仅排序展示，不改变任何判定结果） */
@@ -124,14 +128,14 @@ export default function DashboardPage() {
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-blue-100 ring-1 ring-white/20">
               <ShieldCheck className="size-3.5" />
-              AI财税健康 + 融资准备
+              财税自查与融资材料准备
             </div>
             <h1 className="mt-5 text-3xl leading-tight font-bold tracking-tight md:text-4xl">税智盾 TaxShield AI</h1>
             <p className="mt-3 max-w-xl text-lg leading-8 text-white">
-              面向小微企业的AI财税健康管理与融资准备助手
+              小微企业财税健康管理与融资准备平台
             </p>
             <p className="mt-2 max-w-xl text-sm leading-6 text-blue-100">
-              让小微企业先把财税数据理清楚，再更从容地准备融资。
+              帮助企业形成可理解、可复核的经营数据，旨在降低银企信息不对称；实际效果仍需真实场景验证。
             </p>
             <p className="mt-2 text-xs leading-6 text-blue-200">规则引擎检测 · 本地政策关联 · AI 辅助解释与整改 · 历史趋势对比</p>
 
@@ -184,7 +188,7 @@ export default function DashboardPage() {
       </section>
 
       {/* ===== 核心能力展示 ===== */}
-      <SectionCard title="先体检、再整改、再准备融资" description="小微企业融资困难不仅来自资金供给，也来自企业自身数据分散、财税规范程度不足和融资材料准备成本高。">
+      <SectionCard title="数据 → 检测 → 解释 → 整改 → 复检 → 融资准备" description="围绕企业侧资料整理与核查展开；融资准备结果不代表任何金融机构授信意见。">
         <div className="grid gap-3 sm:grid-cols-3">
           {[
             ['01', '财税健康体检', '整理财务、发票与申报数据，识别风险证据。'],
@@ -198,11 +202,21 @@ export default function DashboardPage() {
         </div>
       </SectionCard>
       <FinancingReadinessCard report={report} />
+      <section className="grid gap-4 md:grid-cols-3">
+        {[
+          { icon: Activity, title: '企业财税健康画像', detail: '五维观察规范度、收入波动、数据完整度、整改进度及融资准备；不替代信用评级。', to: '/growth' },
+          { icon: TrendingUp, title: '企业成长档案', detail: '串联首次检测、整改过程和复检结果，展示健康指数变化趋势。', to: '/growth' },
+          { icon: Building2, title: '融资准备中心', detail: '汇总健康状态、风险情况、整改进度和资料完整情况，服务企业侧准备。', to: '/financing' },
+        ].map(({ icon: Icon, title, detail, to }) => <Link key={title} to={to} className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-brand-200 hover:shadow-md">
+          <span className="flex size-10 items-center justify-center rounded-xl bg-brand-soft text-brand-2 transition group-hover:bg-brand group-hover:text-white"><Icon className="size-5" /></span>
+          <p className="mt-3.5 text-sm font-semibold text-slate-900">{title}</p><p className="mt-1.5 text-xs leading-5 text-slate-500">{detail}</p>
+        </Link>)}
+      </section>
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { icon: ShieldCheck, title: '智能风险检测', desc: '基于企业财务、发票与申报数据运行规则引擎，识别风险等级、数据证据与潜在影响。' },
-          { icon: BrainCircuit, title: 'Qwen AI税务助手', desc: '围绕已识别风险提供通俗解释、政策参考与整改建议，帮助企业快速理解问题。' },
-          { icon: ClipboardCheck, title: '整改闭环管理', desc: '通过整改方案与 Checklist 管理执行进度，复检后自动呈现风险改善结果。' },
+          { icon: ShieldCheck, title: '规则风险检测', desc: '用于发现需进一步核查事项，不直接认定违法。' },
+          { icon: BrainCircuit, title: '风险解释辅助', desc: '辅助理解已有风险，不参与风险判断。具体结果标明模型或离线模板来源。' },
+          { icon: ClipboardCheck, title: '整改闭环管理', desc: '通过整改方案与 Checklist 管理执行进度，复检后呈现风险变化，结果可能改善或恶化。' },
           { icon: History, title: '历史健康趋势', desc: '汇总历次健康指数与风险数量变化，直观查看企业税务健康趋势和整改成效。' },
         ].map(({ icon: Icon, title, desc }) => (
           <div key={title} className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-brand-200 hover:shadow-md">
@@ -328,14 +342,23 @@ export default function DashboardPage() {
         </section>
       )}
 
-      <SectionCard title="AI 辅助工作台" icon={BrainCircuit} description="检测结论来自规则引擎；AI 只解释已有证据，不生成新的风险判断。">
+      <section className="grid gap-5 lg:grid-cols-2">
+        <TaxHealthProfileCard report={report} compact />
+        <IndustryBenchmarkCard report={report} />
+      </section>
+
+      <BusinessAdvisorCard report={report} />
+
+      <SectionCard title="风险理解与整改工作台" icon={BrainCircuit} description="辅助理解已有风险，不参与风险判断。政策参考来自本地资料库。">
         {/* 流程连接：数据 → 规则检测 → AI解释 → 整改闭环（仅视觉，不改变业务逻辑） */}
         <div className="mb-5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-3">
           {[
             { label: '数据', sub: '企业填报/上传' },
             { label: '规则检测', sub: 'Risk Engine V2' },
-            { label: 'AI 解释', sub: 'Qwen 在线生成' },
-            { label: '整改闭环', sub: '复检提升' },
+            { label: '解释', sub: '基于已有风险证据' },
+            { label: '整改', sub: '记录执行进度' },
+            { label: '复检', sub: '重新运行规则' },
+            { label: '融资准备', sub: '企业侧材料自查' },
           ].map((step, idx, arr) => (
             <div key={step.label} className="flex items-center gap-3">
               <div className="flex items-center gap-2.5">
@@ -392,9 +415,9 @@ export default function DashboardPage() {
 
       {/* ===== 核心闭环叙事 ===== */}
       <SectionCard
-        title="从数据到复检的六步闭环"
+        title="从数据到融资准备的六步流程"
         icon={Scale}
-        description="风险判定全程由规则引擎完成，AI 仅负责解释、政策溯源与整改方案生成。"
+        description="规则引擎形成核查提示；AI辅助解释与整改建议，本地资料库提供政策参考。复检不保证分数提高。"
       >
         <div className="grid grid-cols-3 gap-3 md:grid-cols-6">
           {FLOW.map(({ icon: Icon, label }, index) => (

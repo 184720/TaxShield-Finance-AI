@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Building2, FileText, FileUp, History, LayoutDashboard, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { Building2, FileText, FileUp, History, LayoutDashboard, ShieldCheck, ShieldAlert, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
@@ -9,6 +9,10 @@ const NAV_ITEMS = [
   { path: '/risk-analysis', label: '风险分析', icon: ShieldAlert },
   { path: '/report', label: '健康报告', icon: FileText },
   { path: '/financing', label: '融资准备', icon: Building2 },
+  { path: '/growth', label: '成长档案', icon: TrendingUp },
+  { path: '/trust', label: '可信中心', icon: ShieldCheck },
+  { path: '/knowledge', label: '知识资产', icon: FileText },
+  { path: '/cases', label: '案例中心', icon: Building2 },
   { path: '/history', label: '历史检测', icon: History },
 ];
 

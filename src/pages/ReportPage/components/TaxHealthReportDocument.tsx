@@ -108,7 +108,7 @@ export default function TaxHealthReportDocument({
         </div>
         <div className="ts-cover-ai">
           <span className="ts-ai-tag"><span className="ts-ai-dot" />AI 辅助分析</span>
-          <span className="ts-cover-ai-text">风险结论由规则引擎判定 · AI 负责解释、政策溯源与整改建议 · 政策依据来自本地知识库</span>
+          <span className="ts-cover-ai-text">企业内部财税健康管理参考 · 规则引擎形成核查提示 · AI辅助解释与建议 · 本地政策参考</span>
         </div>
         <div className="ts-cover-foot">报告编号：{report.reportId} · 引擎版本：{report.engineVersion} · 规则版本：{report.ruleVersion}</div>
       </section>
@@ -222,7 +222,7 @@ export default function TaxHealthReportDocument({
           <div className="ts-risk-head">
             <span className={`ts-level ts-level-${risk.level}`}>{LEVEL_LABEL[risk.level]}</span>
             <span className="ts-cat">{risk.riskName}</span>
-            <span className="ts-ai-tag"><span className="ts-ai-dot" />{explanation.provider === 'qwen' ? 'Qwen 在线生成' : '离线保障结果'}</span>
+            <span className="ts-ai-tag"><span className="ts-ai-dot" />{explanation.provider === 'qwen' ? '结果来源：Qwen模型' : '结果来源：离线模板'}</span>
           </div>
           <div className="ts-ai-panel">
             <h3 className="ts-h3">风险是什么</h3>
@@ -297,7 +297,7 @@ export default function TaxHealthReportDocument({
                   ))}
                 </ul>
               )}
-              {plan && <p className="ts-plan-meta">方案来源：{plan.provider === 'qwen' ? 'Qwen AI 在线生成' : '离线保障模板'} · {new Date(plan.generatedAt).toLocaleString('zh-CN', { hour12: false })}</p>}
+              {plan && <p className="ts-plan-meta">方案来源：{plan.provider === 'qwen' ? 'Qwen模型' : '离线保障模板'} · {new Date(plan.generatedAt).toLocaleString('zh-CN', { hour12: false })}</p>}
             </div>
           );
         })}
@@ -366,7 +366,7 @@ export default function TaxHealthReportDocument({
 
       {/* 尾页声明 */}
       {financing && financing.reportId === report.reportId && financing.enterpriseId === report.profile.id && <FinancingReadinessAppendix result={financing} />}
-      <p className="ts-page-foot">税智盾 TaxShield AI · 本报告基于企业填报数据与内置规则引擎自动生成，仅供税务风险自查参考，不构成税务鉴证或申报结论。</p>
+      <p className="ts-page-foot">税智盾 TaxShield AI · 企业内部财税健康管理参考。基于企业填报数据与内置规则生成，不构成税务鉴证、申报结论或任何金融机构授信意见。</p>
     </div>
   );
 }

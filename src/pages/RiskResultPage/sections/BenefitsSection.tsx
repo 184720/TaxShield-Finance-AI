@@ -38,7 +38,7 @@ export default function BenefitsSection({ benefits }: BenefitsSectionProps) {
               税费优惠适配结果
             </CardTitle>
             <p className="text-xs text-[#64748b] mt-1">
-              自动判断您可享受的税费优惠政策
+              按填报信息提示待核实的税费优惠，适用资格需专业复核
             </p>
           </div>
           <div className="text-right">

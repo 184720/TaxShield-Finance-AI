@@ -9,6 +9,7 @@ import { loadMaterialSelections, saveMaterialSelections } from '@/modules/financ
 import { MATERIAL_STATUS_LABEL, READINESS_LABEL } from '@/modules/financing/types';
 import type { FinancingMaterialStatus } from '@/modules/financing/types';
 import type { TaxHealthReport } from '@/modules/domain/types';
+import FinancingTaxHealthSummary from '@/components/FinancingTaxHealthSummary';
 
 export default function FinancingReadinessPage() {
   const [params] = useSearchParams();
@@ -42,7 +43,7 @@ function FinancingContent({ report, latest }: { report: TaxHealthReport; latest?
       <section className="rounded-2xl bg-brand p-6 text-white md:p-8">
         <p className="text-xs text-blue-200">TaxShield AI · 普惠金融场景</p>
         <h1 className="mt-2 text-3xl font-semibold">小微企业融资准备中心</h1>
-        <p className="mt-3 text-blue-100">面向小微企业的AI财税健康管理与融资准备助手</p>
+        <p className="mt-3 text-blue-100">企业侧财税健康与材料准备自查，不代表任何金融机构授信意见。</p>
         <p className="mt-5 flex items-center gap-2"><Building2 className="size-4" />{report.profile.name}</p>
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
           <div><p className="text-xs text-blue-200">当前财税健康指数</p><p className="mt-2 text-3xl font-semibold">{result.taxHealthIndex} / 100</p></div>
@@ -52,6 +53,7 @@ function FinancingContent({ report, latest }: { report: TaxHealthReport; latest?
         <p className="mt-5 text-sm leading-6 text-blue-100">{result.summary}</p>
       </section>
       <p className="break-all text-xs leading-5 text-slate-500">依据报告：{report.reportId} · 检测时间：{new Date(report.createdAt).toLocaleString('zh-CN')} · {report.dataSource === 'demo' ? '演示数据，非真实企业融资结论' : '企业上传检测数据'}</p>
+      <FinancingTaxHealthSummary report={report} selections={selections} checklists={loadChecklists(report.reportId)} />
       {latest && latest.reportId !== report.reportId && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm">当前查看历史报告的准备情况；企业已有更新检测。<Link className="ml-2 underline" to={`/financing?reportId=${encodeURIComponent(latest.reportId)}`}>查看最新报告的融资准备</Link></div>}
       <div className="grid gap-6 md:grid-cols-2">
         <SectionCard title="当前优势" icon={ClipboardCheck}><ul className="space-y-3 text-sm text-slate-600">{result.strengths.map((text) => <li key={text}>✓ {text}</li>)}{result.strengths.length === 0 && <li>请先补齐企业资料并完成检测。</li>}</ul></SectionCard>
@@ -89,4 +91,3 @@ function FinancingContent({ report, latest }: { report: TaxHealthReport; latest?
     </main>
   );
 }
-

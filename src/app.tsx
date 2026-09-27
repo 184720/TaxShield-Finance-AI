@@ -12,6 +12,10 @@ import ReportPage from '@/pages/ReportPage/ReportPage';
 import HistoryPage from '@/pages/HistoryPage/HistoryPage';
 import RecheckPage from '@/pages/RecheckPage/RecheckPage';
 import FinancingReadinessPage from '@/pages/FinancingReadinessPage/FinancingReadinessPage';
+import EnterpriseGrowthPage from '@/pages/EnterpriseGrowthPage/EnterpriseGrowthPage';
+import TrustCenterPage from '@/pages/TrustCenterPage/TrustCenterPage';
+import KnowledgeCenterPage from '@/pages/KnowledgeCenterPage/KnowledgeCenterPage';
+import CasesPage from '@/pages/CasesPage/CasesPage';
 
 export default function App() {
   return (
@@ -24,6 +28,10 @@ export default function App() {
         <Route path="risk-analysis" element={<RiskAnalysisPage />} />
         <Route path="report" element={<ReportPage />} />
         <Route path="financing" element={<FinancingReadinessPage />} />
+        <Route path="growth" element={<EnterpriseGrowthPage />} />
+        <Route path="trust" element={<TrustCenterPage />} />
+        <Route path="knowledge" element={<KnowledgeCenterPage />} />
+        <Route path="cases" element={<CasesPage />} />
         <Route path="history" element={<HistoryPage />} />
         <Route path="recheck/:reportId" element={<RecheckPage />} />
         <Route path="result" element={<RiskResultPage />} />

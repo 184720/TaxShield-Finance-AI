@@ -102,7 +102,7 @@ function RectificationCard({ plan, checklist, onToggle }: { plan: RectificationP
       </div>
 
       <p className="mt-2 text-[11px] text-slate-500">
-        {plan.provider === 'qwen' ? 'Qwen 在线生成' : 'Mock 离线保障模式'} · {plan.model || '历史结果'}{plan.generatedAt ? ` · ${new Date(plan.generatedAt).toLocaleString('zh-CN', { hour12: false })}` : ''}
+        {plan.provider === 'qwen' ? '结果来源：Qwen模型' : '结果来源：Mock离线模板'} · {plan.model || '历史结果'}{plan.generatedAt ? ` · ${new Date(plan.generatedAt).toLocaleString('zh-CN', { hour12: false })}` : ''}
       </p>
 
       <p className="mt-3.5 text-sm leading-6 text-slate-700">{plan.summary}</p>
@@ -347,7 +347,7 @@ export default function ReportPage() {
       <PageTitle
         eyebrow="AI Tax Report"
         title="企业税务健康体检报告"
-        description={`${report.profile.name} · 本报告由规则引擎自动判定风险结论，AI 提供解释、政策溯源与整改建议。`}
+        description={`${report.profile.name} · 企业内部财税健康管理参考。规则引擎形成核查提示，AI辅助解释与整改建议，政策参考来自本地资料库。`}
         action={
           <Button onClick={handleExportPdf} disabled={isGenerating} className="gap-2 bg-brand shadow-md hover:bg-brand-600">
             {isGenerating ? <Loader2 className="size-4 animate-spin" /> : <FileDown className="size-4" />}

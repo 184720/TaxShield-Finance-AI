@@ -135,7 +135,7 @@ export default function AIAssistantWidget({ report, open: controlledOpen, onOpen
                   <div className="leading-tight">
                     <p className="text-sm font-semibold">税智盾 AI 助手</p>
                     <p className="mt-0.5 text-[11px] text-white/75">
-                      基于 {report.profile.name} 当前风险报告 · Qwen 在线生成
+                      基于 {report.profile.name} 当前风险报告 · 辅助理解已有风险，不参与风险判断
                     </p>
                   </div>
                 </div>

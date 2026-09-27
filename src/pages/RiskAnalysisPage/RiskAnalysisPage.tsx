@@ -77,7 +77,7 @@ function ExplanationCard({ explanation }: { explanation: AIExplanation }) {
     <div className="mt-4">
       <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px]">
         <span className={`rounded-full px-2.5 py-1 font-semibold ${explanation.provider === 'qwen' ? 'bg-status-ok-soft text-status-ok' : 'bg-status-warn-soft text-status-warn'}`}>
-          {explanation.provider === 'qwen' ? 'Qwen 在线生成' : 'Mock 离线保障模式'}
+          {explanation.provider === 'qwen' ? '结果来源：Qwen模型' : '结果来源：Mock离线模板'}
         </span>
         <span className="text-slate-400">{explanation.model || '历史结果'}{explanation.generatedAt ? ` · ${new Date(explanation.generatedAt).toLocaleString('zh-CN', { hour12: false })}` : ''}</span>
       </div>
@@ -94,7 +94,7 @@ function ExplanationCard({ explanation }: { explanation: AIExplanation }) {
       </div>
       <p className="mt-3 flex items-start gap-2 border-t border-slate-100 pt-3 text-xs leading-5 text-slate-500">
         <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-slate-400" />
-        AI 生成免责声明：{explanation.disclaimer}
+        辅助理解已有风险，不参与风险判断。{explanation.disclaimer}
       </p>
     </div>
   );
@@ -168,6 +168,7 @@ export default function RiskAnalysisPage() {
         }
       />
 
+      <ComplianceNote>用于发现需进一步核查事项，不直接认定违法。AI解释辅助理解已有风险，不参与风险判断；政策条目为本地参考资料，时效与适用性需复核。</ComplianceNote>
       {/* ===== 概览：健康指数 + 关键统计 ===== */}
       <section className="grid gap-5 lg:grid-cols-[auto_1fr]">
         <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_10px_30px_-14px_rgba(15,23,42,0.14)]">
@@ -191,7 +192,7 @@ export default function RiskAnalysisPage() {
         <SectionCard
           title="以下规则因数据不足未执行，不生成风险结论"
           icon={FileCheck2}
-          description="规则引擎在关键字段缺失时不会臆测结论，避免误判。补齐数据后可重新检测。"
+          description="关键字段缺失时相关规则未执行，不等于没有风险。补齐数据后可重新检测。"
           className="border-status-warn-line bg-status-warn-soft"
         >
           <div className="flex flex-wrap gap-2">
