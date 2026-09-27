@@ -163,9 +163,10 @@ export async function handleQwenRequest(request: Request, env: Record<string, st
     const parsed = JSON.parse(result.choices[0].message.content);
     const model = String(result.model || env.QWEN_MODEL || DEFAULT_MODEL_NAME);
     const generatedAt = new Date().toISOString();
-    const data = isRemediation ? QwenRemediationSchema.parse(parsed) : groundQwenExplanationNumbers(parsed, risk);
-    if (isRemediation) validateQwenRemediation(data, input.reportId, risk);
-    else validateQwenExplanation(data, input.reportId, risk, { provider: 'qwen', model, generatedAt });
+    const data = isRemediation
+      ? validateQwenRemediation(QwenRemediationSchema.parse(parsed), input.reportId, risk)
+      : groundQwenExplanationNumbers(parsed, risk);
+    if (!isRemediation) validateQwenExplanation(data, input.reportId, risk, { provider: 'qwen', model, generatedAt });
     const body = { data, meta: { provider: 'qwen', model, generatedAt } };
     recentResponses.set(cacheKey, { expiresAt: Date.now() + SERVER_COOLDOWN_MS, body });
     return Response.json(body, { headers: { 'Cache-Control': 'no-store' } });

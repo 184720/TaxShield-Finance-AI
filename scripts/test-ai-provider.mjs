@@ -13,8 +13,12 @@ try {
  const formattedRisk={...risk,evidence:[{label:'进项税额',value:'100,000.00元'}]};
  const formattedRaw={...raw,evidence_explanation:'进项税额为100000元'};
  assert.doesNotThrow(()=>schema.validateQwenExplanation(formattedRaw,'report-test',formattedRisk),'equivalent numeric formatting should be accepted');
- const invalid=[{riskId:'cit'},{reportId:'other'},{evidence_indices:[9]},{policy_ids:['FAKE001']},{evidence_explanation:'进项税额为999元'},{reason_analysis:'依据不存在〔2025〕99号'},{risk_summary:'企业已经违法'},{healthIndex:100},{confidence:'perfect'},{data_gaps:['缺少资料',123]},{risk_summary:'风险已解除'}];
+ const invalid=[{riskId:'cit'},{reportId:'other'},{evidence_indices:[9]},{policy_ids:['FAKE001']},{risk_summary:'企业已经违法'},{healthIndex:100},{confidence:'perfect'},{data_gaps:['缺少资料',123]},{risk_summary:'风险已解除'}];
  for(const change of invalid) assert.throws(()=>schema.validateQwenExplanation({...raw,...change},'report-test',risk),JSON.stringify(change));
+ const unsupportedNumber=schema.validateQwenExplanation({...raw,evidence_explanation:'核对差异金额（¥999）对应明细'},'report-test',risk);
+ assert.ok(unsupportedNumber.reasonAnalysis.includes('核对差异金额对应的业务明细'));assert.doesNotMatch(unsupportedNumber.reasonAnalysis,/999|未核实数值/);
+ const unsupportedCitation=schema.validateQwenExplanation({...raw,reason_analysis:'依据不存在〔2025〕99号'},'report-test',risk);
+ assert.ok(unsupportedCitation.reasonAnalysis.includes('相关政策规定'),unsupportedCitation.reasonAnalysis);assert.doesNotMatch(unsupportedCitation.reasonAnalysis,/2025|99|不存在〔/);
  const {createLLMProvider}=await server.ssrLoadModule('/src/modules/ai/llm-provider.ts');
  const request={reportId:'report-test',riskRecord:risk,prompt:'ignored'};
  const snapshot=JSON.stringify(risk);
@@ -39,10 +43,10 @@ try {
  globalThis.fetch=async()=>Response.json({model:'qwen-plus',choices:[{message:{content:JSON.stringify(partialRaw)},finish_reason:'stop'}]});
  const partialReq=new Request('https://demo.test/.netlify/functions/qwen-explain',{method:'POST',headers:{origin:'https://demo.test','content-type':'application/json'},body:JSON.stringify({task:'explanation',reportId:'report-partial',riskRecord:partialEvidenceRisk})});
  const partialResult=await handleQwenRequest(partialReq,{QWEN_API_KEY:'test-key'});assert.equal(partialResult.status,200,'numeric and partial evidence should be normalized at the server boundary');
- const partialBody=await partialResult.json();assert.ok(partialBody.data.evidence_explanation.includes('未核实数值'));assert.ok(!partialBody.data.evidence_explanation.includes('20,000'));
+ const partialBody=await partialResult.json();assert.doesNotMatch(partialBody.data.evidence_explanation,/未核实数值|undefined|null/i);assert.ok(!partialBody.data.evidence_explanation.includes('20,000'));
  const deduplicated=await handleQwenRequest(req(),{QWEN_API_KEY:'test-key'});assert.equal(deduplicated.status,200);assert.equal(deduplicated.headers.get('X-TaxShield-Deduplicated'),'true');assert.equal(upstreamCalls,1,'same risk should not hit upstream twice during cooldown');
  globalThis.fetch=async()=>Response.json({choices:[{message:{content:'{invalid'},finish_reason:'stop'}]});
  const malformedReq=new Request('https://demo.test/.netlify/functions/qwen-explain',{method:'POST',headers:{origin:'https://demo.test','content-type':'application/json'},body:JSON.stringify({task:'explanation',reportId:'report-malformed',riskRecord:risk})});
  assert.equal((await handleQwenRequest(malformedReq,{QWEN_API_KEY:'test-key'})).status,502);
- console.log('PASS: valid Qwen adaptation; 11 invalid outputs; provider selection; 4 fallback paths; input isolation; server guards, API request, malformed upstream');
+ console.log('PASS: valid Qwen adaptation; invalid outputs rejected or safely normalized; provider selection; 4 fallback paths; input isolation; server guards, API request, malformed upstream');
 } finally {globalThis.fetch=originalFetch;await server.close();}

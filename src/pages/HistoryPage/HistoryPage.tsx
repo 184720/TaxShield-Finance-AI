@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import { ArrowRight, CalendarClock, TrendingDown, TrendingUp, Activity, ShieldAlert, FileBarChart } from 'lucide-react';
 import { PageTitle, RiskBadge, SectionCard, formatMoney, scoreTone } from '@/components/TaxShieldPrimitives';
-import { loadHistory, loadReports, selectReport } from '@/lib/taxshield-store';
+import { loadHistory, loadReports, selectReport, subscribeReports } from '@/lib/taxshield-store';
 import { compareReports } from '@/modules/report/report-diff';
 import type { AssessmentHistoryItem, TaxHealthReport } from '@/modules/domain/types';
 
@@ -57,6 +57,12 @@ function legacyToTrend(legacy: AssessmentHistoryItem[]): TrendPoint[] {
       impactAmount: item.totalImpactAmount ?? 0,
       isRecheck: false,
     }));
+}
+
+function readHistoryPageData() {
+  const reports = loadReports().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const legacy = loadHistory().filter((item) => !reports.some((report) => report.reportId === item.reportId));
+  return { reports, legacy };
 }
 
 function Comparison({ previous, current }: { previous: TaxHealthReport; current: TaxHealthReport }) {
@@ -153,9 +159,11 @@ function Comparison({ previous, current }: { previous: TaxHealthReport; current:
 }
 
 export default function HistoryPage() {
-  const reports = useMemo(() => loadReports().sort((a, b) => b.createdAt.localeCompare(a.createdAt)), []);
-  const legacy = useMemo(() => loadHistory().filter((item) => !reports.some((r) => r.reportId === item.reportId)), [reports]);
+  const [historyData, setHistoryData] = useState(readHistoryPageData);
+  const { reports, legacy } = historyData;
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  useEffect(() => subscribeReports(() => setHistoryData(readHistoryPageData())), []);
 
   // 合并完整报告 + 旧版摘要，按时间升序生成趋势
   const trend = useMemo<TrendPoint[]>(() => {

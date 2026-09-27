@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { AIExplanation, RiskRecord } from '@/modules/domain/types';
+import { sanitizeAIExplanationText, sanitizeAITextForDisplay, UNSUPPORTED_NUMBER_MARKER } from './text-safety';
 
 const RiskEvidenceSchema = z.object({
   label: z.string(),
@@ -33,13 +34,13 @@ export function validateAIExplanation(value: unknown, reportId: string, risk: Ri
     throw new Error('AI explanation includes evidence not present in the risk record.');
   }
 
-  return explanation;
+  return sanitizeAIExplanationText(explanation);
 }
 
 const prose = z.string().trim().min(1).max(1800);
 const numericTokenPattern = /[-+]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:[eE][-+]?\d+)?/g;
 // Citation shapes that must be backed by a supplied policy record.
-const citationPattern = /〔|〕|《[^》]*》|\[\d{4}\]|第[一二三四五六七八九十百\d]+[号条款]|(?:公告|通知|文件|政策编号)\s*[：:]\s*\S+/g;
+const citationPattern = /[^\s，。；、：《》]*〔[^〕]*〕\s*\d*号|《[^》]*》|\[\d{4}\]|第[一二三四五六七八九十百\d]+[号条款]|(?:公告|通知|文件|政策编号)\s*[：:]\s*\S+/g;
 
 function collectCanonicalNumbers(value: string): Set<string> {
   const numbers = new Set<string>();
@@ -51,11 +52,12 @@ function collectCanonicalNumbers(value: string): Set<string> {
 }
 
 function redactUnsupportedNumbers(value: string, allowedNumbers: Set<string>): string {
-  return value.replace(numericTokenPattern, (token) => {
+  const redacted = value.replace(numericTokenPattern, (token) => {
     const parsed = Number(token.replaceAll(',', ''));
     const canonical = Object.is(parsed, -0) ? '0' : parsed.toString();
-    return Number.isFinite(parsed) && allowedNumbers.has(canonical) ? token : '未核实数值';
+    return Number.isFinite(parsed) && allowedNumbers.has(canonical) ? token : UNSUPPORTED_NUMBER_MARKER;
   });
+  return sanitizeAITextForDisplay(redacted);
 }
 
 /**

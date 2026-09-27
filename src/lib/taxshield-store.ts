@@ -2,8 +2,10 @@ import { scopedStorage } from '@lark-apaas/client-toolkit-lite';
 import { WUHAN_ZHICHUANG_PROFILE } from '@/modules/domain/demo-data';
 import type { AIExplanation, AssessmentHistoryItem, EnterpriseProfile, RemediationStatus, TaxHealthReport, UploadPreview } from '@/modules/domain/types';
 import type { ChecklistItem, RectificationPlan } from '@/modules/rectification';
+import { sanitizeAIExplanationText, sanitizeAITextForDisplay } from '@/modules/ai/text-safety';
 
 const KEYS = { profile: 'taxshield_v2_profile', report: 'taxshield_v2_report', history: 'taxshield_v2_history', uploads: 'taxshield_v2_uploads', rectificationPlans: 'taxshield_v2_rectification_plans', checklists: 'taxshield_v2_checklists' };
+const REPORTS_CHANGED_EVENT = 'taxshield:reports-changed';
 
 function load<T>(key: string, fallback: T): T { try { const raw = scopedStorage.getItem(key); return raw ? JSON.parse(raw) as T : fallback; } catch { return fallback; } }
 function save(key: string, value: unknown) { try { scopedStorage.setItem(key, JSON.stringify(value)); } catch { /* storage is optional in demo */ } }
@@ -12,7 +14,10 @@ export const loadProfile = () => load<EnterpriseProfile>(KEYS.profile, WUHAN_ZHI
 export const saveProfile = (profile: EnterpriseProfile) => save(KEYS.profile, profile);
 // Migrate old Checklist-derived "resolved" flags without changing detection results.
 function normalizeReport(report: TaxHealthReport): TaxHealthReport {
-  return { ...report, risks: report.risks.map((risk) => ({ ...risk, status: 'detected' })) };
+  const aiExplanationSnapshot = report.aiExplanationSnapshot
+    ? Object.fromEntries(Object.entries(report.aiExplanationSnapshot).map(([riskId, explanation]) => [riskId, sanitizeAIExplanationText(explanation)]))
+    : undefined;
+  return { ...report, risks: report.risks.map((risk) => ({ ...risk, status: 'detected' })), aiExplanationSnapshot };
 }
 export function loadReport(): TaxHealthReport | null {
   const report = load<TaxHealthReport | null>(KEYS.report, null);
@@ -30,10 +35,23 @@ export function selectReport(reportId: string) {
   if (report) save(KEYS.report, report);
 }
 export const loadHistory = () => load<AssessmentHistoryItem[]>(KEYS.history, []);
+export function subscribeReports(listener: () => void) {
+  listener();
+  if (typeof window === 'undefined') return () => undefined;
+  window.addEventListener(REPORTS_CHANGED_EVENT, listener);
+  return () => window.removeEventListener(REPORTS_CHANGED_EVENT, listener);
+}
 export const loadUploads = () => load<UploadPreview[]>(KEYS.uploads, []);
 export const saveUploads = (uploads: UploadPreview[]) => save(KEYS.uploads, uploads);
-export const loadRectificationPlans = (reportId?: string) => load<RectificationPlan[]>(KEYS.rectificationPlans, []).filter((plan) => !reportId || plan.reportId === reportId);
-export const loadChecklists = (reportId?: string) => load<ChecklistItem[]>(KEYS.checklists, []).filter((item) => !reportId || item.reportId === reportId);
+const normalizeRectificationPlan = (plan: RectificationPlan): RectificationPlan => ({
+  ...plan,
+  summary: sanitizeAITextForDisplay(plan.summary),
+  steps: plan.steps.map((item) => sanitizeAITextForDisplay(item)),
+  requiredMaterials: plan.requiredMaterials.map((item) => sanitizeAITextForDisplay(item, '相关业务资料')),
+  precautions: plan.precautions.map((item) => sanitizeAITextForDisplay(item)),
+});
+export const loadRectificationPlans = (reportId?: string) => load<RectificationPlan[]>(KEYS.rectificationPlans, []).map(normalizeRectificationPlan).filter((plan) => !reportId || plan.reportId === reportId);
+export const loadChecklists = (reportId?: string) => load<ChecklistItem[]>(KEYS.checklists, []).map((item) => ({ ...item, content: sanitizeAITextForDisplay(item.content) })).filter((item) => !reportId || item.reportId === reportId);
 export function saveReport(report: TaxHealthReport) {
   const reports = loadReports();
   save(REPORTS_KEY, [report, ...reports.filter((r) => r.reportId !== report.reportId)]);
@@ -41,6 +59,7 @@ export function saveReport(report: TaxHealthReport) {
   const item: AssessmentHistoryItem = { id: report.id, createdAt: report.createdAt, enterpriseName: report.profile.name, healthIndex: report.healthIndex, riskCount: report.risks.length, totalImpactAmount: report.totalImpactAmount, reportId: report.id, dataSource: report.dataSource, remediationStatus: report.remediationStatus };
   const history = loadHistory().filter((entry) => entry.reportId !== report.id);
   save(KEYS.history, [item, ...history].slice(0, 12));
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(REPORTS_CHANGED_EVENT));
 }
 
 export function updateRemediationStatus(riskId: string, status: RemediationStatus) {
@@ -50,6 +69,7 @@ export function updateRemediationStatus(riskId: string, status: RemediationStatu
 }
 
 export function saveRectificationPlan(plan: RectificationPlan) {
+  plan = normalizeRectificationPlan(plan);
   const plans = loadRectificationPlans();
   save(KEYS.rectificationPlans, [plan, ...plans.filter((item) => item.id !== plan.id)]);
 
