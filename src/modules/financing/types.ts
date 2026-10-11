@@ -15,7 +15,7 @@ export interface FinancingReadinessReport {
   id: string;
   reportId: string;
   enterpriseId: string;
-  taxHealthIndex: number;
+  taxHealthIndex: number | null;
   readinessLevel: FinancingReadinessLevel;
   summary: string;
   strengths: string[];

@@ -18,7 +18,7 @@ export interface AIChatContext {
   reportId: string;
   enterpriseName: string;
   dataSource: TaxHealthReport['dataSource'];
-  healthIndex: number;
+  healthIndex: number | null;
   overallLevel: RiskRecord['level'];
   risks: Array<{
     id: string;

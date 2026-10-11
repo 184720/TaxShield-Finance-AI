@@ -20,11 +20,11 @@ try {
   const original = JSON.stringify(before);
   const allReady = Object.fromEntries(SELF_CHECK_MATERIALS.map((item) => [item.id, 'ready']));
   const first = generate(before);
-  assert.equal(before.healthIndex, 89);
+  assert.equal(before.healthIndex, 90);
   assert.equal(before.risks.length, 6);
-  assert.equal(before.risks.filter((risk) => risk.level === 'high').length, 2);
+  assert.equal(before.risks.filter((risk) => risk.level === 'high').length, 1);
   assert.equal(first.readinessLevel, 'priority-remediation');
-  console.log('场景1 PASS: 89 / 6 / 2 → 需优先整改');
+  console.log('场景1 PASS: 90 / 6 / 1 → 需优先整改');
 
   const after = recheckReport(before, createRectifiedDemoData());
   assert.equal(after.healthIndex, 99);

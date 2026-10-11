@@ -15,7 +15,7 @@ export default function FinancingReadinessCard({ report }: { report: TaxHealthRe
         <>
           <div className="grid gap-4 sm:grid-cols-3">
             <div><p className="text-xs text-slate-500">当前状态</p><p className="mt-2 text-xl font-semibold text-brand">{READINESS_LABEL[result.readinessLevel]}</p></div>
-            <div><p className="text-xs text-slate-500">财税健康</p><p className="mt-2 text-xl font-semibold">{result.taxHealthIndex} / 100</p></div>
+            <div><p className="text-xs text-slate-500">财税健康</p><p className="mt-2 text-xl font-semibold">{result.taxHealthIndex ?? '—'} / 100</p></div>
             <div><p className="text-xs text-slate-500">待补充 / 待复核材料</p><p className="mt-2 text-xl font-semibold">{result.requiredMaterials.filter((item) => item.status !== 'ready').length} 项</p></div>
           </div>
           <p className="mt-4 text-sm leading-6 text-slate-600">{result.summary}</p>

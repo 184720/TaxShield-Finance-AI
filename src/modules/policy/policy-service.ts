@@ -8,14 +8,15 @@ function keywordsForRisk(risk: RiskRecord) {
 
 /** Policy matching is post-detection explanation only; it cannot change a risk decision. */
 export function getPoliciesForRisk(riskRecord: RiskRecord, industry?: Industry): PolicyArticle[] {
-  const byRiskId = POLICY_LIBRARY.filter((policy) => policy.riskTypes.includes(riskRecord.id));
+  const candidates = POLICY_LIBRARY.filter(policy => policy.status !== 'superseded' && (!industry || policy.industries.includes(industry)));
+  const byRiskId = candidates.filter((policy) => policy.riskTypes.includes(riskRecord.id));
   if (byRiskId.length) return byRiskId;
 
-  const byCategory = POLICY_LIBRARY.filter((policy) => policy.riskTypes.includes(riskRecord.category));
+  const byCategory = candidates.filter((policy) => policy.riskTypes.includes(riskRecord.category));
   if (byCategory.length) return byCategory;
 
   const keywords = keywordsForRisk(riskRecord);
-  return POLICY_LIBRARY.filter((policy) => {
+  return candidates.filter((policy) => {
     const content = `${policy.title} ${policy.content}`.toLowerCase();
     return (!industry || policy.industries.includes(industry)) && keywords.some((keyword) => content.includes(keyword));
   }).slice(0, 3);

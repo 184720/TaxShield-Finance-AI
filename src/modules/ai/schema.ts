@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { AIExplanation, RiskRecord } from '@/modules/domain/types';
 import { sanitizeAIExplanationText, sanitizeAITextForDisplay, UNSUPPORTED_NUMBER_MARKER } from './text-safety';
+import type { AIChatContext } from './types';
 
 const RiskEvidenceSchema = z.object({
   label: z.string(),
@@ -94,6 +95,22 @@ function hasUnsupportedCitations(value: string, risk: RiskRecord): boolean {
     if (!supported) return true;
   }
   return false;
+}
+
+/** Free chat uses the same evidence/citation gate as structured explanations. */
+export function validateChatAnswer(value: unknown, context: AIChatContext): string {
+  if (typeof value !== 'string' || !value.trim() || value.length > 12000) throw new Error('Invalid chat answer');
+  if (/违法|偷税|逃税|(?:风险等级|健康分|健康指数).{0,12}(?:改为|调整|提高|降低|变为)|新增.{0,6}风险|风险已解除|已解除风险|不存在风险|确定.{0,6}(?:漏享|可享受)|贷款成功率|授信额度/.test(value)) throw new Error('Model attempted a decision');
+  const risk = {
+    evidence: context.risks.flatMap(item => item.evidence),
+    policyReferences: context.risks.flatMap(item => item.policyReferences).filter(item => item.status !== 'superseded'),
+  } as RiskRecord;
+  if (hasUnsupportedCitations(value, risk)) throw new Error('Unsupported policy citation');
+  // A number appearing in a law does not justify an arbitrary company monetary claim.
+  const withoutCitations = value.replace(citationPattern, '');
+  const numbers = collectCanonicalNumbers(JSON.stringify(risk.evidence) + JSON.stringify({ healthIndex: context.healthIndex, riskCount: context.risks.length, highRiskCount: context.risks.filter(r => r.level === 'high').length, mediumRiskCount: context.risks.filter(r => r.level === 'medium').length, lowRiskCount: context.risks.filter(r => r.level === 'low').length }));
+  for (const token of collectCanonicalNumbers(withoutCitations)) if (!numbers.has(token)) throw new Error('Unsupported numeric evidence');
+  return sanitizeAITextForDisplay(value);
 }
 export const QwenExplanationSchema = z.object({
   riskId: z.string().min(1).max(120), reportId: z.string().min(1).max(160),

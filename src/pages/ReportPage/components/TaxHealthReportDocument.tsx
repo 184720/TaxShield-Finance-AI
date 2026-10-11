@@ -101,8 +101,8 @@ export default function TaxHealthReportDocument({
         <div className="ts-cover-meta">
           <div><span>企业名称</span><strong>{report.profile.name}</strong></div>
           <div><span>检测时间</span><strong>{createdAt}</strong></div>
-          <div><span>健康指数</span><strong>{report.healthIndex} / 100</strong></div>
-          <div><span>风险等级</span><strong>{OVERALL_LABEL[report.overallLevel]}</strong></div>
+          <div><span>健康指数</span><strong>{report.healthIndex ?? '—'} / 100</strong></div>
+          <div><span>风险等级</span><strong>{report.healthIndex === null ? '数据不足 · 未评分（已识别事项仍需核查）' : OVERALL_LABEL[report.overallLevel]}</strong></div>
           <div><span>数据来源</span><strong>{report.dataSource === 'uploaded' ? '企业上传数据' : '内置演示数据'}</strong></div>
           <div><span>风险事项</span><strong>{report.risks.length} 项 · 影响 {formatMoney(report.totalImpactAmount)}</strong></div>
         </div>
@@ -131,7 +131,7 @@ export default function TaxHealthReportDocument({
       <section className="ts-page">
         <h2 className="ts-h2">二、健康评分</h2>
         <div className="ts-score">
-          <div className="ts-score-big">{report.healthIndex}<span> / 100</span></div>
+          <div className="ts-score-big">{report.healthIndex ?? '—'}<span> / 100</span></div>
           <div className="ts-score-grid">
             <div><span>总体等级</span><strong>{OVERALL_LABEL[report.overallLevel]}</strong></div>
             <div><span>风险数量</span><strong>{report.risks.length} 项</strong></div>
@@ -308,7 +308,7 @@ export default function TaxHealthReportDocument({
       {/* 历史趋势与复检对比 */}
       <section className="ts-page">
           <h2 className="ts-h2">七、历史趋势与复检对比</h2>
-          <p className="ts-intro">本章节汇总企业历次检测的健康指数、风险数量与潜在影响金额变化，用于观察合规整改的长期效果。</p>
+          <p className="ts-intro">本章节汇总企业历次检测的健康指数、风险数量与潜在影响金额变化，仅观察本次留存记录，不推断长期合规水平。未测算事项不计入金额；不同规则版本不可直接归因比较。</p>
           <table className="ts-table">
             <thead>
               <tr>
@@ -326,7 +326,7 @@ export default function TaxHealthReportDocument({
                 <tr key={r.reportId}>
                   <td>{i + 1}</td>
                   <td>{new Date(r.createdAt).toLocaleDateString('zh-CN')}</td>
-                  <td><strong>{r.healthIndex}</strong></td>
+                  <td><strong>{r.healthIndex ?? '—'}</strong></td>
                   <td>{r.risks.length} 项</td>
                   <td>{r.risks.filter((x) => x.level === 'high').length} 项</td>
                   <td className="num">{formatMoney(r.totalImpactAmount)}</td>
@@ -339,16 +339,17 @@ export default function TaxHealthReportDocument({
           {recheck ? (
             <>
               <h3 className="ts-h3">本次复检结果</h3>
+          {recheck.previous.engineVersion !== report.engineVersion && <p className="ts-disclaimer">报告规则版本不同：分数不可直接比较，事项变化不能直接归因于整改；请用当前同一引擎重新检测原始与整改后输入。</p>}
           <div className="ts-recheck">
-            <div className="ts-recheck-num">整改前<strong>{recheck.diff.healthIndexBefore}</strong></div>
+            <div className="ts-recheck-num">整改前<strong>{recheck.diff.healthIndexBefore ?? '—'}</strong></div>
                 <div className="ts-recheck-arrow">→</div>
-            <div className="ts-recheck-num up">整改后<strong>{recheck.diff.healthIndexAfter}</strong></div>
-                <div className="ts-recheck-delta">变化<strong>{recheck.diff.healthIndexDelta > 0 ? '+' : ''}{recheck.diff.healthIndexDelta}</strong></div>
+            <div className="ts-recheck-num up">整改后<strong>{recheck.diff.healthIndexAfter ?? '—'}</strong></div>
+                <div className="ts-recheck-delta">变化<strong>{(recheck.diff.healthIndexDelta ?? 0) > 0 ? '+' : ''}{recheck.diff.healthIndexDelta ?? '—'}</strong></div>
           </div>
               <table className="ts-table ts-diff-table">
                 <thead><tr><th>对比指标</th><th>整改前</th><th>整改后</th><th>变化</th></tr></thead>
                 <tbody>
-                  <tr><td>健康指数</td><td>{recheck.diff.healthIndexBefore}</td><td>{recheck.diff.healthIndexAfter}</td><td>{recheck.diff.healthIndexDelta > 0 ? '+' : ''}{recheck.diff.healthIndexDelta}</td></tr>
+                  <tr><td>健康指数</td><td>{recheck.diff.healthIndexBefore ?? '—'}</td><td>{recheck.diff.healthIndexAfter ?? '—'}</td><td>{(recheck.diff.healthIndexDelta ?? 0) > 0 ? '+' : ''}{recheck.diff.healthIndexDelta ?? '—'}</td></tr>
                   <tr><td>风险数量</td><td>{recheck.diff.riskCountBefore}</td><td>{recheck.diff.riskCountAfter}</td><td>{recheck.diff.riskCountAfter - recheck.diff.riskCountBefore}</td></tr>
                   <tr><td>高风险数量</td><td>{recheck.diff.highRiskCountBefore}</td><td>{recheck.diff.highRiskCountAfter}</td><td>{recheck.diff.highRiskCountAfter - recheck.diff.highRiskCountBefore}</td></tr>
                   <tr><td>潜在影响金额</td><td>{formatMoney(recheck.diff.impactAmountBefore)}</td><td>{formatMoney(recheck.diff.impactAmountAfter)}</td><td>{formatMoney(recheck.diff.impactAmountAfter - recheck.diff.impactAmountBefore)}</td></tr>

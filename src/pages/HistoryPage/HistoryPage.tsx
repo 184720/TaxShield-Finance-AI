@@ -8,13 +8,13 @@ import { loadHistory, loadReports, selectReport, subscribeReports } from '@/lib/
 import { compareReports } from '@/modules/report/report-diff';
 import type { AssessmentHistoryItem, TaxHealthReport } from '@/modules/domain/types';
 
-const signed = (n: number) => (n > 0 ? '+' + n : String(n));
+const signed = (n: number | null) => n === null ? '不可比较' : (n > 0 ? '+' + n : String(n));
 
 interface TrendPoint {
   reportId: string;
   label: string;
   date: string;
-  healthIndex: number;
+  healthIndex: number | null;
   totalRisks: number;
   highRisks: number;
   mediumRisks: number;
@@ -75,7 +75,7 @@ function Comparison({ previous, current }: { previous: TaxHealthReport; current:
     ['潜在影响金额', diff.impactAmountBefore, diff.impactAmountAfter],
   ] as const;
 
-  const deltaTone = diff.healthIndexDelta >= 0 ? 'text-status-ok' : diff.healthIndexDelta > -10 ? 'text-status-warn' : 'text-status-risk';
+  const deltaTone = (diff.healthIndexDelta ?? 0) >= 0 ? 'text-status-ok' : (diff.healthIndexDelta ?? 0) > -10 ? 'text-status-warn' : 'text-status-risk';
   const riskDelta = diff.riskCountAfter - diff.riskCountBefore;
 
   return (
@@ -85,20 +85,21 @@ function Comparison({ previous, current }: { previous: TaxHealthReport; current:
         整改前后变化对比
       </h3>
 
+      {previous.engineVersion !== current.engineVersion && <p role="note" className="mt-3 text-sm text-amber-700">报告规则版本不同：分数不可直接比较，事项变化不能直接归因于整改；请用当前同一引擎重新检测原始与整改后输入。</p>}
       <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_auto_1fr]">
         <div className="rounded-xl border border-slate-200 bg-white p-4 text-center">
           <p className="text-xs text-slate-500">整改前</p>
-          <p className="ts-tabular mt-1.5 text-3xl font-bold text-slate-400">{diff.healthIndexBefore}</p>
+          <p className="ts-tabular mt-1.5 text-3xl font-bold text-slate-400">{diff.healthIndexBefore ?? '—'}</p>
           <p className="mt-1 text-[11px] text-slate-400">{diff.riskCountBefore} 项风险 · {formatMoney(diff.impactAmountBefore)}</p>
         </div>
         <div className="flex flex-col items-center justify-center gap-1 text-slate-300">
-          {diff.healthIndexDelta >= 0 ? <TrendingUp className="size-6 text-status-ok" /> : <TrendingDown className="size-6 text-status-risk" />}
+          {(diff.healthIndexDelta ?? 0) >= 0 ? <TrendingUp className="size-6 text-status-ok" /> : <TrendingDown className="size-6 text-status-risk" />}
           <span className={`ts-tabular text-lg font-bold ${deltaTone}`}>{signed(diff.healthIndexDelta)}</span>
           <span className="text-[10px] text-slate-400">健康分变化</span>
         </div>
         <div className="rounded-xl border border-status-ok-line bg-status-ok-soft p-4 text-center">
           <p className="text-xs text-slate-500">整改后</p>
-          <p className="ts-tabular mt-1.5 text-3xl font-bold text-status-ok">{diff.healthIndexAfter}</p>
+          <p className="ts-tabular mt-1.5 text-3xl font-bold text-status-ok">{diff.healthIndexAfter ?? '—'}</p>
           <p className="mt-1 text-[11px] text-slate-500">{diff.riskCountAfter} 项风险 · {formatMoney(diff.impactAmountAfter)}</p>
         </div>
       </div>
@@ -119,10 +120,10 @@ function Comparison({ previous, current }: { previous: TaxHealthReport; current:
             {metrics.map(([label, before, after]) => (
               <tr key={label} className="border-b border-slate-100">
                 <td className="py-2 text-slate-600">{label}</td>
-                <td className="py-2">{label === '潜在影响金额' ? formatMoney(before) : before.toLocaleString('zh-CN')}</td>
-                <td className="py-2">{label === '潜在影响金额' ? formatMoney(after) : after.toLocaleString('zh-CN')}</td>
+                <td className="py-2">{label === '潜在影响金额' ? formatMoney(before) : before == null ? '未评分' : before.toLocaleString('zh-CN')}</td>
+                <td className="py-2">{label === '潜在影响金额' ? formatMoney(after) : after == null ? '未评分' : after.toLocaleString('zh-CN')}</td>
                 <td className={`py-2 font-medium ${after - before >= 0 ? 'text-status-risk' : 'text-status-ok'}`}>
-                  {label === '潜在影响金额' ? signed(Number((after - before).toFixed(0))) : signed(Number((after - before).toFixed(2)))}
+                  {label === '潜在影响金额' ? signed(Number((after - before).toFixed(0))) : before == null || after == null ? '不可比较' : signed(Number((after - before).toFixed(2)))}
                 </td>
               </tr>
             ))}
@@ -187,7 +188,7 @@ export default function HistoryPage() {
         lineStyle: { color: '#1a365d', width: 3 },
         itemStyle: { color: '#1a365d' },
         areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(26,54,93,0.2)' }, { offset: 1, color: 'rgba(26,54,93,0.02)' }] } },
-        data: trend.map((p) => p.healthIndex),
+        data: trend.filter(p => p.healthIndex !== null).map((p) => p.healthIndex as number),
         markPoint: {
           data: [
             { type: 'max', name: '最高', label: { color: '#16a34a' } },
@@ -217,7 +218,7 @@ export default function HistoryPage() {
 
   // 汇总指标
   const latest = reports[0];
-  const best = trend.length ? trend.reduce((a, b) => (a.healthIndex > b.healthIndex ? a : b)) : null;
+  const best = trend.length ? trend.reduce((a, b) => ((a.healthIndex ?? -1) > (b.healthIndex ?? -1) ? a : b)) : null;
   const totalDetections = trend.length;
 
   return (
@@ -264,8 +265,8 @@ export default function HistoryPage() {
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-slate-500">
             <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-status-ok" />最高：{best?.healthIndex}（{best?.label}）</span>
-            <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-status-risk" />最低：{trend.reduce((a, b) => (a.healthIndex < b.healthIndex ? a : b)).healthIndex}（{trend.reduce((a, b) => (a.healthIndex < b.healthIndex ? a : b)).label}）</span>
-            <span>波动幅度：{Math.max(...trend.map((p) => p.healthIndex)) - Math.min(...trend.map((p) => p.healthIndex))} 分</span>
+            <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-status-risk" />最低：{trend.reduce((a, b) => ((a.healthIndex ?? 101) < (b.healthIndex ?? 101) ? a : b)).healthIndex}（{trend.reduce((a, b) => ((a.healthIndex ?? 101) < (b.healthIndex ?? 101) ? a : b)).label}）</span>
+            <span>波动幅度：{trend.some(p => p.healthIndex !== null) ? Math.max(...trend.filter(p => p.healthIndex !== null).map((p) => p.healthIndex as number)) - Math.min(...trend.filter(p => p.healthIndex !== null).map((p) => p.healthIndex as number)) : '—'} 分</span>
           </div>
         </SectionCard>
       ) : (
@@ -331,7 +332,7 @@ export default function HistoryPage() {
             const high = report.risks.filter((r) => r.level === 'high').length;
             const medium = report.risks.filter((r) => r.level === 'medium').length;
             const low = report.risks.filter((r) => r.level === 'low').length;
-            const healthDelta = previous ? report.healthIndex - previous.healthIndex : null;
+            const healthDelta = previous && previous.engineVersion === report.engineVersion && report.healthIndex !== null && previous.healthIndex !== null ? report.healthIndex - previous.healthIndex : null;
 
             return (
               <article key={report.reportId} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -362,7 +363,7 @@ export default function HistoryPage() {
                   <div className="rounded-xl bg-slate-50 px-3 py-2.5">
                     <p className="text-[11px] text-slate-400">健康指数</p>
                     <p className="ts-tabular mt-0.5 flex items-baseline gap-1.5 text-xl font-bold text-slate-900">
-                      {report.healthIndex}
+                      {report.healthIndex ?? '—'}
                       {healthDelta !== null && (
                         <span className={`text-xs font-medium ${healthDelta >= 0 ? 'text-status-ok' : 'text-status-risk'}`}>
                           {signed(healthDelta)}
@@ -446,7 +447,7 @@ export default function HistoryPage() {
                   <p className="text-xs text-slate-400">{new Date(item.createdAt).toLocaleString('zh-CN')}</p>
                 </div>
                 <div className="flex items-center gap-4 text-sm">
-                  <span className="ts-tabular">健康分 <strong className="text-brand">{item.healthIndex}</strong></span>
+                  <span className="ts-tabular">健康分 <strong className="text-brand">{item.healthIndex ?? '—'}</strong></span>
                   <span className="ts-tabular text-slate-500">风险 {item.riskCount} 项</span>
                   <span className="ts-tabular text-slate-500">{formatMoney(item.totalImpactAmount ?? 0)}</span>
                 </div>

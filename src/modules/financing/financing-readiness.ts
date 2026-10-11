@@ -14,13 +14,13 @@ export function generateFinancingReadiness(
   const highRisks = report.risks.filter((risk) => risk.level === 'high');
   const outstanding = materials.filter((item) => item.status !== 'ready');
   const coreMissing = materials.some((item) => item.source === 'report' && item.status !== 'ready');
-  const readinessLevel = highRisks.length > 0 || report.healthIndex < 80
+  const readinessLevel = highRisks.length > 0 || (report.healthIndex !== null && report.healthIndex < 80)
     ? 'priority-remediation'
     : coreMissing || outstanding.length > 0 || report.dataInsufficiencies.length > 0
       ? 'needs-improvement' : 'well-prepared';
   const warnings = [
     ...(highRisks.length ? [`本次检测仍存在 ${highRisks.length} 项高风险：${highRisks.map((risk) => risk.riskName).join('、')}。建议优先复核后再整理融资申请资料。`] : []),
-    ...(report.healthIndex < 80 ? ['财税健康指数低于本工具准备提示参考值 80，建议先核查风险并复检。'] : []),
+    ...((report.healthIndex !== null && report.healthIndex < 80) ? ['财税健康指数低于本工具准备提示参考值 80，建议先核查风险并复检。'] : []),
     ...(outstanding.length ? [`还有 ${outstanding.length} 项材料待补充或复核，不能视为资料齐备。`] : []),
     ...(report.dataInsufficiencies.length ? [`${report.dataInsufficiencies.length} 项检测因数据不足未执行，请补充数据重新检测。`] : []),
     ...(report.dataSource === 'demo' ? ['当前为模拟企业演示数据，准备状态不代表真实企业材料或融资情况。'] : []),

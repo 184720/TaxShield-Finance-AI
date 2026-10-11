@@ -46,7 +46,7 @@ function FinancingContent({ report, latest }: { report: TaxHealthReport; latest?
         <p className="mt-3 text-blue-100">企业侧财税健康与材料准备自查，不代表任何金融机构授信意见。</p>
         <p className="mt-5 flex items-center gap-2"><Building2 className="size-4" />{report.profile.name}</p>
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
-          <div><p className="text-xs text-blue-200">当前财税健康指数</p><p className="mt-2 text-3xl font-semibold">{result.taxHealthIndex} / 100</p></div>
+          <div><p className="text-xs text-blue-200">当前财税健康指数</p><p className="mt-2 text-3xl font-semibold">{result.taxHealthIndex ?? '—'} / 100</p></div>
           <div><p className="text-xs text-blue-200">融资准备状态</p><p className="mt-2 text-2xl font-semibold">{READINESS_LABEL[result.readinessLevel]}</p></div>
           <div><p className="text-xs text-blue-200">资料待补充 / 复核</p><p className="mt-2 text-3xl font-semibold">{result.requiredMaterials.filter((item) => item.status !== 'ready').length} 项</p></div>
         </div>

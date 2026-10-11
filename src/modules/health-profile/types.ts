@@ -16,7 +16,7 @@ export interface EnterpriseTaxHealthProfile {
   reportId: string;
   enterpriseId: string;
   generatedAt: string;
-  healthIndex: number;
+  healthIndex: number | null;
   dimensions: HealthProfileDimension[];
   disclaimer: string;
 }

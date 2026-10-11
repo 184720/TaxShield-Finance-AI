@@ -14,7 +14,7 @@ try {
   const store = await server.ssrLoadModule('/src/lib/taxshield-store.ts');
   const saved = JSON.stringify(store.loadReports());
   const { before, after, diff, readinessAfter } = buildDemoCase();
-  assert.equal(before.healthIndex, 89); assert.equal(after.healthIndex, 99);
+  assert.equal(before.healthIndex, 90); assert.equal(after.healthIndex, 99);
   assert.equal(diff.resolvedRiskIds.length, 5);
   assert.equal(after.previousReportId, before.reportId);
   assert.equal(readinessAfter.readinessLevel, 'needs-improvement');
@@ -40,5 +40,5 @@ try {
     const html = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(Page)));
     assert.ok(html.length > 1000); assert.ok(!html.includes('NaN')); assert.ok(!html.includes('undefined'));
   }
-  console.log('PASS: 五维画像、缺失/连续月份保护、Checklist隔离与去重、原报告不可变、8类知识资产、新页面渲染、Demo真实引擎89→99/6→1、材料未虚构齐备、历史不被写入');
+  console.log('PASS: 五维画像、缺失/连续月份保护、Checklist隔离与去重、原报告不可变、8类知识资产、新页面渲染、Demo真实引擎90→99/6→1、材料未虚构齐备、历史不被写入');
 } finally { await server.close(); }

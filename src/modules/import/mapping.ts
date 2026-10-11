@@ -3,9 +3,10 @@ import type { FinancialData, InvoiceData, MonthlyTrendData, TaxDataBundle, TaxDe
 type CellValue = string | number | null | undefined;
 
 const numberOf = (value: CellValue) => {
-  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : NaN;
+  if (value == null || String(value).trim() === '') return NaN;
   const parsed = Number(String(value ?? '').replace(/[￥¥,\s]/g, ''));
-  return Number.isFinite(parsed) ? parsed : 0;
+  return Number.isFinite(parsed) ? parsed : NaN;
 };
 
 const columnValues = (preview: UploadPreview, field: string): CellValue[] => {
@@ -13,13 +14,14 @@ const columnValues = (preview: UploadPreview, field: string): CellValue[] => {
   return header ? preview.sourceRows.map((row) => row[header]) : [];
 };
 
-const sum = (values: CellValue[]) => values.reduce<number>((total, value) => total + numberOf(value), 0);
+const sum = (values: CellValue[]) => values.length ? values.reduce<number>((total, value) => total + numberOf(value), 0) : NaN;
 
 const requireMapped = (preview: UploadPreview, fields: string[]) => fields.every((field) => Boolean(preview.mapping[field]));
 
 export function mapFinancial(preview: UploadPreview): FinancialData | null {
   const required = ['accountingRevenue', 'operatingCost', 'sellingExpenses', 'adminExpenses', 'rAndDExpenses', 'totalProfit'];
   if (!requireMapped(preview, required)) return null;
+  if (required.some(field => !Number.isFinite(sum(columnValues(preview, field))))) return null;
   return {
     accountingRevenue: sum(columnValues(preview, 'accountingRevenue')),
     operatingCost: sum(columnValues(preview, 'operatingCost')),
@@ -36,27 +38,32 @@ export function mapInvoice(preview: UploadPreview): InvoiceData | null {
   const counterpartyHeader = preview.mapping.counterparty;
   const redHeader = preview.mapping.redFlag;
   const supplierAmounts = new Map<string, number>();
-  let redInvoiceAmount = 0;
+  let redInvoiceAmount = redHeader ? 0 : NaN;
   preview.sourceRows.forEach((row) => {
     const amount = numberOf(row[amountHeader]);
     const counterparty = String(row[counterpartyHeader] ?? '未标注交易方').trim() || '未标注交易方';
     supplierAmounts.set(counterparty, (supplierAmounts.get(counterparty) ?? 0) + amount);
-    if (redHeader && /红|负/.test(String(row[redHeader] ?? ''))) redInvoiceAmount += amount;
+    if (redHeader) {
+      const flag = String(row[redHeader] ?? '').trim();
+      if (['是', '红字', '负数', '1', 'true'].includes(flag)) redInvoiceAmount += Math.abs(amount);
+      else if (!['否', '蓝字', '正常', '0', 'false'].includes(flag)) redInvoiceAmount = NaN;
+    }
   });
   const invoicedRevenue = sum(columnValues(preview, 'amount'));
   const largestSupplierAmount = Math.max(0, ...supplierAmounts.values());
   return {
     invoicedRevenue,
     outputTax: sum(columnValues(preview, 'tax')),
-    inputTax: 0,
-    supplierConcentration: invoicedRevenue > 0 ? largestSupplierAmount / invoicedRevenue : 0,
+    inputTax: sum(columnValues(preview, 'inputTax')),
+    supplierConcentration: preview.sourceRows.some(row => row[counterpartyHeader] == null || String(row[counterpartyHeader]).trim() === '') ? NaN : invoicedRevenue > 0 ? largestSupplierAmount / invoicedRevenue : NaN,
     redInvoiceAmount,
-    abnormalInvoiceAmount: 0,
+    abnormalInvoiceAmount: sum(columnValues(preview, 'abnormalInvoiceAmount')),
   };
 }
 
 export function mapDeclaration(preview: UploadPreview): TaxDeclarationData | null {
   if (!requireMapped(preview, ['declaredRevenue', 'vatPayable', 'corporateIncomeTaxPayable'])) return null;
+  if (['declaredRevenue', 'vatPayable', 'corporateIncomeTaxPayable'].some(field => !Number.isFinite(sum(columnValues(preview, field))))) return null;
   return {
     declaredRevenue: sum(columnValues(preview, 'declaredRevenue')),
     vatPayable: sum(columnValues(preview, 'vatPayable')),
@@ -100,8 +107,8 @@ export function buildTaxDataBundle(previews: { financial?: UploadPreview; invoic
       financial,
       invoice,
       declaration,
-      receivedAmount: financial.accountingRevenue,
-      contractAmount: financial.accountingRevenue,
+      receivedAmount: NaN,
+      contractAmount: NaN,
       monthlyTrend: previews.financial ? mapMonthlyTrend(previews.financial) : [],
       availability: { receivedAmount: false, contractAmount: false, monthlyTrend: Boolean(previews.financial?.mapping.month) },
     },

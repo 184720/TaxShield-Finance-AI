@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { RiskRecord } from '../../domain/types';
 import { createQwenMessages, createQwenRemediationMessages, createQwenChatMessages } from '../prompts';
-import { groundQwenExplanationNumbers, QwenRemediationSchema, validateQwenExplanation, validateQwenRemediation } from '../schema';
+import { groundQwenExplanationNumbers, QwenRemediationSchema, validateQwenExplanation, validateQwenRemediation, validateChatAnswer } from '../schema';
 
 /**
  * 默认模型名（QWEN_MODEL 未配置时使用）。
@@ -68,7 +68,7 @@ const chatContextSchema = z.object({
   reportId: z.string().min(1).max(160),
   enterpriseName: short,
   dataSource: z.enum(['demo', 'uploaded']),
-  healthIndex: z.number().min(0).max(100),
+  healthIndex: z.number().min(0).max(100).nullable(),
   overallLevel: z.enum(['low', 'medium', 'high']),
   risks: z.array(chatRiskSchema).min(1).max(20),
 }).strict();
@@ -176,7 +176,7 @@ export async function handleQwenRequest(request: Request, env: Record<string, st
   }
 }
 
-/** AI 助手问答请求处理：自由文本输出，不经过 schema 校验（不修改现有 schema.ts） */
+/** AI问答保留文本接口，返回前执行证据、政策引用与决策边界校验。 */
 async function handleChatRequest(rawJson: unknown, env: Record<string, string | undefined>, origin: string | null): Promise<Response> {
   let input;
   try {
@@ -184,7 +184,8 @@ async function handleChatRequest(rawJson: unknown, env: Record<string, string | 
   } catch {
     return reply(400, 'invalid_request');
   }
-  const cacheKey = `${origin}:chat:${input.reportId}:${input.question}`;
+  if (input.reportId !== input.context.reportId) return reply(400, 'mismatched_report');
+  const cacheKey = `${origin}:chat:${input.reportId}:${input.question}:${JSON.stringify(input.context)}`;
   const cached = recentResponses.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
     return Response.json(cached.body, { headers: { 'Cache-Control': 'no-store', 'X-TaxShield-Deduplicated': 'true' } });
@@ -215,8 +216,7 @@ async function handleChatRequest(rawJson: unknown, env: Record<string, string | 
       return reply(502, `provider_error_${response.status}`);
     }
     const result = await response.json();
-    const answer = result.choices?.[0]?.message?.content;
-    if (typeof answer !== 'string' || !answer.trim()) return reply(502, 'empty_chat_response');
+    const answer = validateChatAnswer(result.choices?.[0]?.message?.content, input.context as import('../types').AIChatContext);
     const model = String(result.model || env.QWEN_MODEL || DEFAULT_MODEL_NAME);
     const generatedAt = new Date().toISOString();
     const body = { data: { answer, provider: 'qwen' as const, model, generatedAt }, meta: { provider: 'qwen' as const, model, generatedAt } };

@@ -288,7 +288,7 @@ export default function DashboardPage() {
               </div>
 
               <p className="mt-3.5 text-sm leading-6 text-slate-600">
-                企业当前健康指数 <strong className="ts-tabular text-slate-900">{report.healthIndex}</strong> 分（{scoreBandLabel(report.healthIndex)}），
+                企业当前健康指数 <strong className="ts-tabular text-slate-900">{report.healthIndex ?? '—'}</strong> 分（{scoreBandLabel(report.healthIndex)}），
                 共识别 <strong className="ts-tabular text-slate-900">{report.risks.length}</strong> 项需关注事项，
                 其中高风险 <strong className="ts-tabular text-status-risk">{highCount}</strong> 项。
                 {topRisks[0] && <>建议优先处置「<strong className="text-slate-900">{topRisks[0].riskName}</strong>」，预计影响金额 {formatMoney(topRisks[0].impactAmount)}。</>}
@@ -541,7 +541,7 @@ export default function DashboardPage() {
           <div className="mt-4 flex flex-wrap gap-2">
             {history.slice(0, 4).map((item) => (
               <span key={item.id} className="ts-tabular rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600">
-                {new Date(item.createdAt).toLocaleDateString('zh-CN')} · {item.healthIndex} 分
+                {new Date(item.createdAt).toLocaleDateString('zh-CN')} · {item.healthIndex ?? '—'} 分
               </span>
             ))}
             {history.length === 0 && <span className="text-xs text-slate-400">暂无历史记录</span>}

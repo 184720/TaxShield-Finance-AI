@@ -1,9 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import NotFoundPage from "@/pages/NotFoundPage/NotFoundPage";
-import DataInputPage from "@/pages/DataInputPage/DataInputPage";
-import RiskResultPage from "@/pages/RiskResultPage/RiskResultPage";
-import SuggestionPage from "@/pages/SuggestionPage/SuggestionPage";
 import DashboardPage from '@/pages/DashboardPage/DashboardPage';
 import ProfilePage from '@/pages/ProfilePage/ProfilePage';
 import UploadPage from '@/pages/UploadPage/UploadPage';
@@ -34,8 +31,8 @@ export default function App() {
         <Route path="cases" element={<CasesPage />} />
         <Route path="history" element={<HistoryPage />} />
         <Route path="recheck/:reportId" element={<RecheckPage />} />
-        <Route path="result" element={<RiskResultPage />} />
-        <Route path="suggestions" element={<SuggestionPage />} />
+        <Route path="result" element={<Navigate to="/risk-analysis" replace />} />
+        <Route path="suggestions" element={<Navigate to="/report" replace />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

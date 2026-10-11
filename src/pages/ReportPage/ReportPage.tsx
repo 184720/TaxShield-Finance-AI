@@ -446,7 +446,7 @@ export default function ReportPage() {
 
       {/* ===== 报告要点统计 ===== */}
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard icon={ShieldCheck} tone={scoreTone(report.healthIndex) === 'good' ? 'good' : scoreTone(report.healthIndex) === 'warn' ? 'warn' : 'bad'} label="税务健康指数" value={`${report.healthIndex}/100`} detail="规则引擎加权计算" />
+        <StatCard icon={ShieldCheck} tone={scoreTone(report.healthIndex) === 'good' ? 'good' : scoreTone(report.healthIndex) === 'warn' ? 'warn' : 'bad'} label="税务健康指数" value={`${report.healthIndex ?? '未评分'}/100`} detail="规则引擎加权计算" />
         <StatCard icon={ClipboardCheck} label="风险事项" value={`${report.risks.length} 项`} detail={`已完成整改 ${completedRisks} 项`} />
         <StatCard icon={CheckCircle2} tone={doneChecklist === checklists.length && checklists.length > 0 ? 'good' : 'default'} label="Checklist 进度" value={checklists.length ? `${doneChecklist}/${checklists.length}` : '—'} detail={checklists.length ? '整改任务勾选进度' : '尚未生成整改清单'} />
         <StatCard icon={BrainCircuit} label="AI 解释覆盖" value={`${Object.keys(report.aiExplanationSnapshot ?? {}).length}/${report.risks.length}`} detail="已生成解释的风险项" />
@@ -491,32 +491,32 @@ export default function ReportPage() {
         <SectionCard title="健康指数组成解释" icon={Info} description="规则引擎加权计算，AI 不参与定级">
           <div className="flex items-center gap-4 rounded-xl border border-brand-100 bg-brand-soft/50 p-4">
             <div className="text-center">
-              <p className="ts-tabular text-4xl font-bold text-brand">{report.healthIndex}</p>
+              <p className="ts-tabular text-4xl font-bold text-brand">{report.healthIndex ?? '—'}</p>
               <p className="text-[11px] text-slate-500">/ 100 分</p>
             </div>
             <div className="flex-1 space-y-2.5">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-500">风险数量权重</span>
-                <span className="ts-tabular font-medium text-slate-700">{report.risks.length} 项 · 30%</span>
+                <span className="text-slate-500">触发事项数量</span>
+                <span className="ts-tabular font-medium text-slate-700">{report.risks.length} 项（逐项计算）</span>
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-500">风险等级权重</span>
-                <span className="ts-tabular font-medium text-slate-700">高 {highCount} / 中 {mediumCount} / 低 {lowCount} · 40%</span>
+                <span className="text-slate-500">内部严重度 × 关注系数</span>
+                <span className="ts-tabular font-medium text-slate-700">非实证发生概率，AI不参与</span>
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-500">影响金额权重</span>
-                <span className="ts-tabular font-medium text-slate-700">{formatMoney(report.totalImpactAmount)} · 30%</span>
+                <span className="text-slate-500">影响系数</span>
+                <span className="ts-tabular font-medium text-slate-700">min(14, 4 + 事项测算金额 / 80000)</span>
               </div>
             </div>
           </div>
           <p className="mt-4 text-xs leading-6 text-slate-500">
-            健康指数综合考虑风险数量、风险等级及影响金额三个维度。
-            高风险项扣分权重最高，影响金额越大扣分越多。
+            健康指数 = 100 − Σ（内部严重度 × 关注系数 × 影响系数），四舍五入并限制在0–100。
+            存在未执行规则时不出综合分；整体风险标签不低于已检测事项中的最高等级。
             该指数为内部自评参考，不代表企业不存在风险，也不等同于纳税信用等级。
           </p>
           <div className="mt-3 flex items-start gap-2 rounded-lg bg-slate-50 px-3 py-2.5 text-[11px] leading-5 text-slate-500">
             <Info className="mt-0.5 size-3 shrink-0 text-brand-2" />
-            指数 ≥80 为良好，≥60 需关注，&lt;60 风险较高。建议结合下方风险明细逐项复核。
+            分数分段与风险事项等级为不同口径；高分不覆盖高风险事项。建议结合下方风险明细逐项复核。
           </div>
         </SectionCard>
       </section>
@@ -658,19 +658,20 @@ export default function ReportPage() {
       {/* ===== 复检对比（若为复检报告） ===== */}
       {recheck && (
         <SectionCard title="复检对比" icon={Sparkles} description={`对比基准报告：${recheck.previous.reportId}`}>
+          {recheck.previous.engineVersion !== report.engineVersion && <p role="note" className="text-sm text-amber-700">报告规则版本不同：分数不可直接比较，事项变化不能直接归因于整改；请用当前同一引擎重新检测原始与整改后输入。</p>}
           <div className="flex flex-wrap items-center justify-center gap-6 rounded-xl border border-slate-200/70 bg-slate-50/70 px-5 py-6">
             <div className="text-center">
               <p className="text-xs text-slate-500">整改前</p>
-              <p className="ts-tabular mt-1.5 text-3xl font-bold text-slate-400">{recheck.diff.healthIndexBefore}</p>
+              <p className="ts-tabular mt-1.5 text-3xl font-bold text-slate-400">{recheck.diff.healthIndexBefore ?? '—'}</p>
             </div>
             <span className="text-2xl text-slate-300">→</span>
             <div className="text-center">
               <p className="text-xs text-slate-500">整改后</p>
-              <p className="ts-tabular mt-1.5 text-3xl font-bold text-status-ok">{recheck.diff.healthIndexAfter}</p>
+              <p className="ts-tabular mt-1.5 text-3xl font-bold text-status-ok">{recheck.diff.healthIndexAfter ?? '—'}</p>
             </div>
             <div className="rounded-xl border border-status-ok-line bg-status-ok-soft px-4 py-2.5 text-center">
               <p className="text-xs text-slate-600">健康指数变化</p>
-              <p className={`ts-tabular mt-1 text-2xl font-bold ${recheck.diff.healthIndexDelta < 0 ? 'text-status-risk' : recheck.diff.healthIndexDelta > 0 ? 'text-status-ok' : 'text-slate-600'}`}>{recheck.diff.healthIndexDelta > 0 ? '+' : ''}{recheck.diff.healthIndexDelta}</p>
+              <p className={`ts-tabular mt-1 text-2xl font-bold ${(recheck.diff.healthIndexDelta ?? 0) < 0 ? 'text-status-risk' : (recheck.diff.healthIndexDelta ?? 0) > 0 ? 'text-status-ok' : 'text-slate-600'}`}>{(recheck.diff.healthIndexDelta ?? 0) > 0 ? '+' : ''}{recheck.diff.healthIndexDelta ?? '—'}</p>
             </div>
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">

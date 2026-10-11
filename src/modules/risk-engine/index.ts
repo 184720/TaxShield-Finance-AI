@@ -10,7 +10,7 @@ export function runRiskEngine(profile: EnterpriseProfile, data: TaxDataBundle, d
     // Explanation enrichment happens after rule evaluation; it cannot change a risk decision.
     policyReferences: getPoliciesForRisk(risk, profile.industry),
   }));
-  const score = calculateHealthIndex(risks);
+  const score = calculateHealthIndex(risks, evaluation.dataInsufficiencies.length > 0);
   const reportId = `report-${crypto.randomUUID()}`;
   return {
     id: reportId,
@@ -22,8 +22,8 @@ export function runRiskEngine(profile: EnterpriseProfile, data: TaxDataBundle, d
     inputSnapshot: structuredClone(data),
     trend: structuredClone(data.monthlyTrend),
     dataSource,
-    ruleVersion: 'v2.1',
-    engineVersion: 'risk-engine-v2.1',
+    ruleVersion: 'v2.2-quality-20261010',
+    engineVersion: 'risk-engine-v2.2-quality-20261010',
     remediationStatus: {},
     ...score,
   };

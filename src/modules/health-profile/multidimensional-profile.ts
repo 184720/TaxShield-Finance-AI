@@ -28,7 +28,7 @@ export function buildMultidimensionalProfile(report: TaxHealthReport, selections
   const uncovered = report.risks.filter((risk) => !items.some((item) => item.riskId === risk.id)).length;
   const readiness = generateFinancingReadiness(report, selections, items);
   const values = [
-    [`${report.risks.length}项待核查`, `高风险${report.risks.filter((risk) => risk.level === 'high').length}项；健康指数仍为${report.healthIndex}/100。`],
+    [`${report.risks.length}项待核查`, `高风险${report.risks.filter((risk) => risk.level === 'high').length}项；健康指数仍为${report.healthIndex ?? '未评分'}/100。`],
     [stability, usable ? `${months[0].month}至${months.at(-1)!.month}，${months.length}个月；不是经营预测。` : '需至少3个连续月份且收入非负、有效；不使用单次分数推断稳定性。'],
     [`${report.dataInsufficiencies.length}项规则未执行`, '按本次检测必要字段口径观察数据缺口。'],
     [items.length ? `${(done / items.length * 100).toFixed(0)}%（${done}/${items.length}步）` : '尚无整改步骤', `另有${uncovered}项风险未创建Checklist。`],

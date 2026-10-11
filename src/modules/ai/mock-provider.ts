@@ -2,13 +2,13 @@ import type { RemediationPlan, RiskRecord } from '@/modules/domain/types';
 import type { AIExplanationRequest, AIProvider } from './types';
 
 const EXPLANATION_TEMPLATES: Record<string, { summary: string; reasonPrefix: string; confidence: number }> = {
-  'revenue-consistency': { summary: '收入申报一致性风险解释', reasonPrefix: '该风险由风险引擎比对发票、会计、申报或收款口径后触发。', confidence: 0.9 },
-  vat: { summary: '增值税风险解释', reasonPrefix: '该风险由风险引擎依据纳税人类型、销项、进项或抵扣相关数据触发。', confidence: 0.88 },
+  'revenue-consistency': { summary: '收入申报一致性风险解释', reasonPrefix: '该风险由风险引擎比对会计与申报口径后触发。', confidence: 0.9 },
+  vat: { summary: '增值税风险解释', reasonPrefix: '该风险由风险引擎比对实际税负与内部演示参考范围后触发，不以留抵本身判断抵扣异常。', confidence: 0.88 },
   cit: { summary: '企业所得税风险解释', reasonPrefix: '该风险由风险引擎结合收入、成本、费用和利润数据触发。', confidence: 0.88 },
   invoice: { summary: '发票风险解释', reasonPrefix: '该风险由风险引擎依据供应商集中度、红字或异常发票等数据触发。', confidence: 0.9 },
-  industry: { summary: '行业偏离风险解释', reasonPrefix: '该风险由风险引擎将企业指标与所属行业基准进行比较后触发。', confidence: 0.86 },
-  benefit: { summary: '税收优惠风险解释', reasonPrefix: '该风险由风险引擎检查企业画像与税收优惠适用条件后触发。', confidence: 0.84 },
-  'three-flow': { summary: '三流一致性风险解释', reasonPrefix: '该风险由风险引擎比对业务、资金、发票和申报相关金额后触发。', confidence: 0.87 },
+  industry: { summary: '行业偏离风险解释', reasonPrefix: '该风险由风险引擎将企业指标与所属行业演示参考值进行比较后触发。', confidence: 0.86 },
+  benefit: { summary: '税收优惠风险解释', reasonPrefix: '规则只提示研发资格待核实，不认定已符合或已漏享优惠。', confidence: 0.84 },
+  'three-flow': { summary: '三流一致性风险解释', reasonPrefix: '该提示由规则引擎比对收款与申报口径后触发，需解释期间差异。', confidence: 0.87 },
   trend: { summary: '趋势异常风险解释', reasonPrefix: '该风险由风险引擎分析多期收入、成本或费用变化后触发。', confidence: 0.85 },
 };
 
@@ -27,7 +27,7 @@ function toExplanation(request: AIExplanationRequest) {
     reasonAnalysis: `${template.reasonPrefix}${risk.reason}`,
     // Evidence is passed through unchanged so the mock never fabricates data.
     evidence: risk.evidence,
-    impact: `风险引擎测算的预计影响金额为 ${Math.round(risk.impactAmount).toLocaleString('zh-CN')} 元。`,
+    impact: risk.impactAmount > 0 ? `内部事项测算参考金额为 ${Math.round(risk.impactAmount).toLocaleString('zh-CN')} 元，非确定税额或损失。` : '尚无充分资料测算税额或优惠金额，请专业复核。',
     suggestion: risk.suggestion.steps,
     confidence: template.confidence,
     disclaimer: '本解释仅对风险引擎已输出的结论及证据进行辅助说明，不构成税务、法律或申报意见；请结合有效政策文件由专业人员复核。',

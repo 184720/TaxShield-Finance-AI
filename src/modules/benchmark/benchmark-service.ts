@@ -3,7 +3,7 @@ import type { BenchmarkMetricId, BenchmarkSnapshot, IndustryBenchmark } from './
 
 const INDUSTRY_LABEL = { software: '软件信息服务', trade: '商贸流通', manufacturing: '制造业', catering: '餐饮服务' } as const;
 const DEMO_RANGES: Record<keyof typeof INDUSTRY_LABEL, Record<BenchmarkMetricId, string>> = {
-  software: { 'tax-burden': '演示区间：3%–6%', 'invoice-pattern': '演示观察：供应商集中度低于50%', 'revenue-trend': '演示观察：月度收入波动不高于30%', 'cost-structure': '演示观察：成本率40%–70%' },
+  software: { 'tax-burden': '演示区间：3%–8%', 'invoice-pattern': '演示观察：供应商集中度低于50%', 'revenue-trend': '演示观察：月度收入波动不高于30%', 'cost-structure': '演示观察：成本率40%–70%' },
   trade: { 'tax-burden': '演示区间：1%–4%', 'invoice-pattern': '演示观察：供应商集中度低于65%', 'revenue-trend': '演示观察：月度收入波动不高于35%', 'cost-structure': '演示观察：成本率65%–90%' },
   manufacturing: { 'tax-burden': '演示区间：2%–5%', 'invoice-pattern': '演示观察：供应商集中度低于60%', 'revenue-trend': '演示观察：月度收入波动不高于30%', 'cost-structure': '演示观察：成本率55%–85%' },
   catering: { 'tax-burden': '演示区间：2%–6%', 'invoice-pattern': '演示观察：供应商集中度低于55%', 'revenue-trend': '演示观察：月度收入波动不高于40%', 'cost-structure': '演示观察：成本率35%–65%' },

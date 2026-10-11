@@ -69,22 +69,24 @@ const RISK_DESC: Record<RiskLevel, string> = {
  * 健康分 → 状态色阶（全局唯一阈值口径，与既有业务判定保持一致）
  * >=80 正常 / >=60 需关注 / <60 风险
  */
-export function scoreTone(score: number): StatusTone {
+export function scoreTone(score: number | null): StatusTone {
+  if (score === null) return 'default';
   if (score >= 80) return 'good';
   if (score >= 60) return 'warn';
   return 'bad';
 }
 
 /** 健康分 → 中文等级描述 */
-export function scoreBandLabel(score: number): string {
-  if (score >= 90) return '优秀';
-  if (score >= 80) return '良好';
-  if (score >= 60) return '需关注';
-  if (score >= 40) return '较差';
-  return '高危';
+export function scoreBandLabel(score: number | null): string {
+  if (score === null) return '数据不足，未评分';
+  if (score >= 90) return '90–100 分段';
+  if (score >= 80) return '80–89 分段';
+  if (score >= 60) return '60–79 分段';
+  if (score >= 40) return '40–59 分段';
+  return '0–39 分段';
 }
 
-export const formatMoney = (value: number) => `¥${Math.round(value).toLocaleString('zh-CN')}`;
+export const formatMoney = (value: number) => Number.isFinite(value) ? `¥${Math.round(value).toLocaleString('zh-CN')}` : '未提供';
 
 /* ---------------------------------------------------------------- 徽章类 */
 
@@ -309,7 +311,7 @@ export function HealthScoreDial({
   className,
   variant = 'light',
 }: {
-  score: number;
+  score: number | null;
   max?: number;
   size?: number;
   tone?: StatusTone;
@@ -321,7 +323,7 @@ export function HealthScoreDial({
   const stroke = Math.max(10, Math.round(size / 16));
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
-  const pct = Math.max(0, Math.min(1, score / max));
+  const pct = Math.max(0, Math.min(1, (score ?? 0) / max));
   const dashOffset = circumference * (1 - pct);
 
   const ringColor: Record<StatusTone, string> = {
@@ -340,7 +342,7 @@ export function HealthScoreDial({
   return (
     <div className={cn('flex flex-col items-center', className)}>
       <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`税务健康指数 ${score} 分，满分 ${max} 分`}>
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`税务健康指数 ${score ?? '—'} 分，满分 ${max} 分`}>
           <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={trackColor} strokeWidth={stroke} />
           <circle
             cx={size / 2}

@@ -6,7 +6,7 @@ export function compareReports(previous: TaxHealthReport, current: TaxHealthRepo
   return {
     previousReportId: previous.reportId, currentReportId: current.reportId,
     healthIndexBefore: previous.healthIndex, healthIndexAfter: current.healthIndex,
-    healthIndexDelta: current.healthIndex - previous.healthIndex,
+    healthIndexDelta: current.engineVersion !== previous.engineVersion || current.healthIndex === null || previous.healthIndex === null ? null : current.healthIndex - previous.healthIndex,
     riskCountBefore: before.size, riskCountAfter: after.size,
     highRiskCountBefore: previous.risks.filter(r => r.level === 'high').length,
     highRiskCountAfter: current.risks.filter(r => r.level === 'high').length,

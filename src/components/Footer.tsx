@@ -23,11 +23,11 @@ export default function Footer() {
           {/* 合规声明 */}
           <div className="max-w-md space-y-1.5 text-left md:text-right">
             <p className="text-xs leading-5 text-slate-500">
-              本工具基于现行通用政策设计，输出结果仅供企业税务风险自查参考，
+              本工具基于本地政策参考与内部演示规则设计，输出结果仅供企业税务风险自查参考，
               不构成税务鉴证、申报结论或法律意见，具体以主管税务机关认定为准。
             </p>
             <p className="text-[11px] leading-5 text-slate-400">
-              AI 生成内容均需税务专业人员复核 · 政策依据全部来自本地知识库并标注文号与时效
+              AI 生成内容均需税务专业人员复核 · 政策参考来自本地资料库，时效与适用性需专业复核
             </p>
           </div>
         </div>

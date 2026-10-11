@@ -80,7 +80,7 @@ export interface QwenChatContext {
   reportId: string;
   enterpriseName: string;
   dataSource: 'demo' | 'uploaded';
-  healthIndex: number;
+  healthIndex: number | null;
   overallLevel: RiskRecord['level'];
   risks: QwenChatContextRisk[];
 }

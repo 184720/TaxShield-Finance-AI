@@ -50,7 +50,7 @@ export default function RecheckPage() {
           <TrendingUp className="mt-0.5 size-5 shrink-0 text-brand-2" />
           <div>
             <p className="font-semibold text-brand">原报告：{previous.reportId}</p>
-            <p className="mt-1 text-sm text-slate-600">整改前健康分 <strong className="text-slate-900">{previous.healthIndex}</strong> / 100 · 风险 {previous.risks.length} 项</p>
+            <p className="mt-1 text-sm text-slate-600">整改前健康分 <strong className="text-slate-900">{previous.healthIndex ?? '—'}</strong> / 100 · 风险 {previous.risks.length} 项</p>
           </div>
         </div>
         <div className="flex shrink-0 gap-2">

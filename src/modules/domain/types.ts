@@ -131,7 +131,7 @@ export interface TaxHealthReport {
   reportId: string;
   createdAt: string;
   profile: EnterpriseProfile;
-  healthIndex: number;
+  healthIndex: number | null;
   overallLevel: RiskLevel;
   totalImpactAmount: number;
   risks: RiskRecord[];
@@ -167,7 +167,7 @@ export interface AssessmentHistoryItem {
   id: string;
   createdAt: string;
   enterpriseName: string;
-  healthIndex: number;
+  healthIndex: number | null;
   riskCount: number;
   totalImpactAmount: number;
   reportId: string;
@@ -178,9 +178,9 @@ export interface AssessmentHistoryItem {
 export interface ReportDiff {
   previousReportId: string;
   currentReportId: string;
-  healthIndexBefore: number;
-  healthIndexAfter: number;
-  healthIndexDelta: number;
+  healthIndexBefore: number | null;
+  healthIndexAfter: number | null;
+  healthIndexDelta: number | null;
   riskCountBefore: number;
   riskCountAfter: number;
   highRiskCountBefore: number;

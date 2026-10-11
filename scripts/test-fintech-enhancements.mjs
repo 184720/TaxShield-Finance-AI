@@ -49,7 +49,7 @@ try {
   assert.equal(rechecked.healthIndex, 99);
   assert.equal(improved.reportId, rechecked.reportId);
   assert.ok(improved.dimensions.find((item) => item.id === 'risk-control').status !== 'attention');
-  console.log('复检兼容 PASS: 89→99仍由原规则引擎计算，新画像仅读取新报告');
+  console.log('复检兼容 PASS: 90→99仍由原规则引擎计算，新画像仅读取新报告');
 } finally {
   await server.close();
 }

@@ -9,7 +9,7 @@ export default function FinancingReadinessAppendix({ result }: { result: Financi
       <section className="ts-page">
         <h2 className="ts-h2">附录 · 融资准备建议</h2>
         <p>依据检测报告：{result.reportId}</p>
-        <p>财税健康指数：<strong>{result.taxHealthIndex} / 100</strong> · 融资准备状态：<strong>{READINESS_LABEL[result.readinessLevel]}</strong></p>
+        <p>财税健康指数：<strong>{result.taxHealthIndex ?? '—'} / 100</strong> · 融资准备状态：<strong>{READINESS_LABEL[result.readinessLevel]}</strong></p>
         <p>{result.summary}</p>
         <h3 className="ts-h3">已准备材料 / 检测字段</h3>
         <p>{ready.map((item) => item.label).join('、') || '暂无'}</p>

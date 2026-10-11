@@ -33,7 +33,7 @@ try {
   console.log('场景2 PASS', JSON.stringify(diff));
 
   const badInput = structuredClone(corrected.inputSnapshot);
-  badInput.invoice.inputTax = badInput.invoice.outputTax;
+  badInput.declaration.vatPayable = badInput.financial.accountingRevenue * 0.1;
   const bad = recheckReport(corrected, badInput);
   const badDiff = compareReports(corrected, bad);
   assert.deepEqual(badDiff.newRiskIds, ['vat']);

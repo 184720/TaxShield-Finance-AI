@@ -17,8 +17,8 @@ export function generateTaxHealthProfile(report: HealthProfileInput): Enterprise
     dimensions: [
       {
         id: 'compliance-stability', label: '当前财税健康状态',
-        status: report.healthIndex >= 80 && highRiskCount === 0 && report.dataInsufficiencies.length === 0 ? 'stable' : 'attention',
-        value: `${report.healthIndex} / 100 分`,
+        status: report.healthIndex !== null && report.healthIndex >= 80 && highRiskCount === 0 && report.dataInsufficiencies.length === 0 ? 'stable' : 'attention',
+        value: report.healthIndex === null ? '数据不足，未评分' : `${report.healthIndex} / 100 分`,
         description: `仅反映本次输入与规则检测结果，不推断长期稳定性。${highRiskCount > 0 ? '仍有高风险事项需优先核查。' : '请结合风险明细和数据完整度理解当前分数。'}`,
         source: 'Tax Health Index（既有报告）',
       },

@@ -13,7 +13,7 @@ export default function EnterpriseGrowthPage() {
   const records = useMemo(() => buildGrowthRecords(loadReports(), enterprise.id), [enterprise.id]);
   const reports = records.map(({ report }) => report);
   const trend = useMemo(() => records.map((record, index) => ({ ...record, label: `第${index + 1}次`, date: new Date(record.report.createdAt).toLocaleDateString('zh-CN') })), [records]);
-  const delta = reports.length ? reports[reports.length - 1].healthIndex - reports[0].healthIndex : 0;
+  const delta = reports.length && reports[0].engineVersion === reports[reports.length - 1].engineVersion && reports[reports.length - 1].healthIndex !== null && reports[0].healthIndex !== null ? reports[reports.length - 1].healthIndex - reports[0].healthIndex : null;
   const chartOption = useMemo<EChartsOption>(() => ({
     tooltip: { trigger: 'axis' }, grid: { left: 40, right: 20, top: 22, bottom: 34 },
     xAxis: { type: 'category', data: trend.map((item) => item.label), axisLabel: { color: '#94a3b8' }, axisLine: { lineStyle: { color: '#e2e8f0' } } },
@@ -27,7 +27,7 @@ export default function EnterpriseGrowthPage() {
       <section className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-slate-200 bg-white p-5"><p className="text-xs text-slate-500">最早留存检测（分）</p><p className="ts-tabular mt-2 text-3xl font-bold text-brand">{trend[0].report.healthIndex}</p><p className="mt-1 text-xs text-slate-400">{trend[0].date} · {trend[0].report.risks.length} 项风险</p></div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5"><p className="text-xs text-slate-500">最新复检 / 检测</p><p className="ts-tabular mt-2 text-3xl font-bold text-status-ok">{trend[trend.length - 1].report.healthIndex}</p><p className="mt-1 text-xs text-slate-400">{trend[trend.length - 1].date} · {trend[trend.length - 1].report.risks.length} 项风险</p></div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5"><p className="text-xs text-slate-500">首末留存检测差值（分）</p><p className={`ts-tabular mt-2 text-3xl font-bold ${delta > 0 ? 'text-status-ok' : delta < 0 ? 'text-status-risk' : 'text-slate-700'}`}>{delta > 0 ? '+' : ''}{delta}</p><p className="mt-1 text-xs text-slate-400">时间序列差值，不等同于一次整改效果</p></div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5"><p className="text-xs text-slate-500">首末留存检测差值（分）</p><p className={`ts-tabular mt-2 text-3xl font-bold ${delta > 0 ? 'text-status-ok' : delta < 0 ? 'text-status-risk' : 'text-slate-700'}`}>{delta !== null && delta > 0 ? '+' : ''}{delta ?? '不可比较'}</p><p className="mt-1 text-xs text-slate-400">同规则版本下的时间序列差值，不等同于一次整改效果；版本不同不计算差值</p></div>
       </section>
       <SectionCard title="健康指数变化趋势" icon={TrendingUp} description="至少两次检测后可观察完整变化曲线；单次检测仅展示当前点。">
         <div className="h-[280px] w-full"><ReactECharts option={chartOption} theme="ud" style={{ width: '100%', height: '280px' }} opts={{ renderer: 'canvas' }} /></div>
@@ -37,9 +37,9 @@ export default function EnterpriseGrowthPage() {
           {trend.map(({ report, label, date, parentReportId, parent, relation }) => <div key={report.reportId} className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:flex-row sm:items-center">
             <div className="w-24 shrink-0"><p className="text-xs font-semibold text-brand">{label}</p><p className="mt-1 text-xs text-slate-400">{date}</p></div>
             <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="font-medium text-slate-800">{parentReportId ? '复检报告' : '独立检测'}</p><RiskBadge level={report.overallLevel} size="sm" /></div>
-              <p className="mt-1 text-xs leading-5 text-slate-500">健康指数 {report.healthIndex} 分 · 风险 {report.risks.length} 项</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">健康指数 {report.healthIndex ?? '—'} 分 · 风险 {report.risks.length} 项</p>
               <p className="break-all text-xs leading-5 text-slate-500">报告编号：{report.reportId}</p>
-              {parent && <p className="break-all text-xs leading-5 text-slate-600">父报告：{parent.reportId} · 健康分 {parent.healthIndex} → {report.healthIndex} 分 · 风险 {parent.risks.length} → {report.risks.length} 项{parent.engineVersion !== report.engineVersion ? '（引擎版本不同，请谨慎比较）' : ''}</p>}
+              {parent && <p className="break-all text-xs leading-5 text-slate-600">父报告：{parent.reportId} · 健康分 {parent.healthIndex ?? '—'} → {report.healthIndex ?? '—'} 分 · 风险 {parent.risks.length} → {report.risks.length} 项{parent.engineVersion !== report.engineVersion ? '（引擎版本不同，请谨慎比较）' : ''}</p>}
               {relation === 'missing' && <p className="text-xs text-amber-700">当前企业未找到有效父报告，暂不展示复检对比。</p>}
               {relation === 'conflict' && <p className="text-xs text-amber-700">父报告关联字段不一致，暂不展示复检对比。</p>}
             </div>
